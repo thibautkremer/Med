@@ -26,10 +26,11 @@ async function run() {
     }
 
     const runsData = await runsRes.json();
-    const successfulRuns = runsData.workflow_runs || [];
+    const allRuns = runsData.workflow_runs || [];
+    const successfulRuns = allRuns.filter(r => r.conclusion === 'success' && (r.name === 'Build Android APK' || r.path?.includes('android.yml')));
     
     if (successfulRuns.length === 0) {
-      console.log("No successful workflow runs found on main branch.");
+      console.log("No successful Android APK workflow runs found on main branch. All runs:", allRuns.map(r => ({id: r.id, name: r.name, conclusion: r.conclusion})));
       return;
     }
 
