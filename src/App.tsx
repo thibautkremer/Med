@@ -24,6 +24,7 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<UserProfile | null>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isAndroid, setIsAndroid] = useState(false);
   
   // Tabs for Dashboard
   const [activeWebTab, setActiveWebTab] = useState<TabType>('catalog');
@@ -37,6 +38,11 @@ export default function App() {
       } catch (e) {
         console.error(e);
       }
+    }
+    
+    // Check if running on Android
+    if (/Android/i.test(navigator.userAgent)) {
+        setIsAndroid(true);
     }
   }, []);
 
@@ -117,6 +123,7 @@ export default function App() {
             />
 
             {/* Beautiful gradient APK download card */}
+            {!isAndroid && (
             <div className="bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-700 dark:to-teal-800 rounded-2xl p-5 text-white shadow-md shadow-emerald-500/10 space-y-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -139,6 +146,7 @@ export default function App() {
                 Installer l'APK (5.0 MB)
               </a>
             </div>
+            )}
             
             {/* Quick shortcuts in a bento card */}
             <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">

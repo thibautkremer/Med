@@ -43,7 +43,10 @@ export default function AIChat({ activeProfile }: AIChatProps) {
         })
       });
 
-      if (!response.ok) throw new Error("Erreur de connexion avec le service IA.");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erreur de connexion avec le service IA.");
+      }
 
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);

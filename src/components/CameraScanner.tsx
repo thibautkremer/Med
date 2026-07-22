@@ -12,49 +12,6 @@ interface CameraScannerProps {
   favorites: string[];
 }
 
-const MOCK_BOXES = [
-  {
-    id: 'doliprane',
-    name: 'Doliprane 1000mg (Boîte)',
-    country: 'FR 🇫🇷',
-    imageText: 'DOLIPRANE 1000mg Paracétamol - Sanofi',
-    desc: 'Boîte de Doliprane 1000mg comprimés (Sanofi, France).',
-    pixelBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=' // Green 1x1 pixel
-  },
-  {
-    id: 'tylenol',
-    name: 'Tylenol Extra Strength 500mg',
-    country: 'US 🇺🇸',
-    imageText: 'TYLENOL Acetaminophen 500mg Extra Strength',
-    desc: 'Boîte de Tylenol 500mg (McNeil, USA).',
-    pixelBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' // Red 1x1 pixel
-  },
-  {
-    id: 'spasfon',
-    name: 'Spasfon Comprimés (Boîte)',
-    country: 'FR 🇫🇷',
-    imageText: 'SPASFON Phloroglucinol - TEVA / Spasmes',
-    desc: 'Boîte de Spasfon comprimés roses (Teva, France).',
-    pixelBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
-  },
-  {
-    id: 'biafine',
-    name: 'Biafine Émulsion (Tube)',
-    country: 'FR 🇫🇷',
-    imageText: 'BIAFINE Émulsion pour brûlures - Johnson & Johnson',
-    desc: 'Tube de Biafine vert et blanc pour les brûlures (France).',
-    pixelBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' // Greenish
-  },
-  {
-    id: 'nyquil',
-    name: 'Vicks NyQuil Cold & Flu',
-    country: 'US 🇺🇸',
-    imageText: 'VICKS NyQuil Cold & Flu Nighttime Relief',
-    desc: 'Bouteille de sirop ou boîte de gélules NyQuil (USA).',
-    pixelBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-  }
-];
-
 export default function CameraScanner({ activeProfile, toggleFavorite, favorites }: CameraScannerProps) {
   const [streamActive, setStreamActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -102,7 +59,7 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
       }
     } catch (err: any) {
       console.error(err);
-      setError("Impossible d'accéder à la caméra. Veuillez autoriser l'accès ou téléverser un fichier.");
+      setError("Impossible d'accéder à la caméra. Vérifiez les permissions de votre navigateur ou de votre système, ou téléversez un fichier.");
     }
   };
 
@@ -183,21 +140,6 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
-  };
-
-  // Quick simulation helper
-  const handleSimulate = (box: typeof MOCK_BOXES[0]) => {
-    setError(null);
-    setResult(null);
-    
-    // Set a neat mockup canvas text so user sees they are scanning
-    const simBase64 = `data:image/png;base64,${box.pixelBase64}`;
-    setCapturedImage(simBase64);
-    
-    setLoading(true);
-    
-    // Simulate API call with target item name as prompt hint
-    analyzeBoxImage(simBase64, 'image/png', box.imageText);
   };
 
   // Perform full-stack API image analysis
@@ -385,30 +327,6 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
               >
                 <Camera className="w-4 h-4" /> Activer la Webcam
               </button>
-            </div>
-
-            {/* Simulation Shortcuts (Highly Useful!) */}
-            <div className="space-y-3 bg-slate-50/70 p-4 rounded-xl border border-slate-100">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Simulateur de Boîtes (Test instantané)</h3>
-              <p className="text-[10px] text-slate-400">Parfait pour tester l'analyse sans boîte réelle sous la main :</p>
-              
-              <div className="space-y-2">
-                {MOCK_BOXES.map((box) => (
-                  <button
-                    key={box.id}
-                    onClick={() => handleSimulate(box)}
-                    className="w-full text-left bg-white hover:bg-emerald-50 hover:border-emerald-200 border border-slate-200 p-2.5 rounded-lg flex items-center justify-between transition-all cursor-pointer text-xs"
-                  >
-                    <div>
-                      <p className="font-extrabold text-slate-700">{box.name}</p>
-                      <p className="text-[10px] text-slate-400 italic mt-0.5">{box.desc}</p>
-                    </div>
-                    <span className="shrink-0 bg-slate-100 group-hover:bg-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded text-slate-500">
-                      Simuler →
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         )}

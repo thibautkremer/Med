@@ -38,7 +38,8 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
       });
 
       if (!response.ok) {
-        throw new Error('Erreur de communication avec le serveur de santé.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur de communication avec le serveur de santé.');
       }
 
       const data = await response.json();

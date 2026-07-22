@@ -177,26 +177,26 @@ export default function MedicalTools() {
         {/* Informational table */}
         <div className="border border-slate-100 rounded-xl p-4 bg-white space-y-2">
           <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Tableau de correspondance rapide</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div className="bg-slate-50 p-2 rounded-lg text-center">
-              <p className="text-slate-400 uppercase font-extrabold text-[9px]">37°C</p>
+              <p className="text-slate-400 uppercase font-extrabold text-xs">37°C</p>
               <p className="font-black text-slate-800 mt-0.5">98.6°F</p>
-              <span className="text-[9px] text-emerald-600 font-bold">Normal</span>
+              <span className="text-xs text-emerald-600 font-bold">Normal</span>
             </div>
             <div className="bg-slate-50 p-2 rounded-lg text-center">
-              <p className="text-slate-400 uppercase font-extrabold text-[9px]">38°C</p>
+              <p className="text-slate-400 uppercase font-extrabold text-xs">38°C</p>
               <p className="font-black text-slate-800 mt-0.5">100.4°F</p>
-              <span className="text-[9px] text-amber-600 font-bold">Fébricule</span>
+              <span className="text-xs text-amber-600 font-bold">Fébricule</span>
             </div>
             <div className="bg-slate-50 p-2 rounded-lg text-center">
-              <p className="text-slate-400 uppercase font-extrabold text-[9px]">39°C</p>
+              <p className="text-slate-400 uppercase font-extrabold text-xs">39°C</p>
               <p className="font-black text-slate-800 mt-0.5">102.2°F</p>
-              <span className="text-[9px] text-red-600 font-bold">Fièvre</span>
+              <span className="text-xs text-red-600 font-bold">Fièvre</span>
             </div>
             <div className="bg-slate-50 p-2 rounded-lg text-center">
-              <p className="text-slate-400 uppercase font-extrabold text-[9px]">40°C</p>
+              <p className="text-slate-400 uppercase font-extrabold text-xs">40°C</p>
               <p className="font-black text-slate-800 mt-0.5">104.0°F</p>
-              <span className="text-[9px] text-red-700 font-bold">Très élevée</span>
+              <span className="text-xs text-red-700 font-bold">Très élevée</span>
             </div>
           </div>
         </div>
