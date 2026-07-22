@@ -140,7 +140,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     res.json(JSON.parse(resultText));
   } catch (error: any) {
     console.error("Symptom Analysis Error:", error);
-    res.status(500).json({ error: "Erreur lors de l'analyse des symptômes: " + error.message });
+    res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });
   }
 });
 
@@ -257,7 +257,7 @@ app.post('/api/image/analyze', async (req, res) => {
     res.json(JSON.parse(resultText));
   } catch (error: any) {
     console.error("Image Analysis Error:", error);
-    res.status(500).json({ error: "Erreur lors de l'analyse de l'image de médicament: " + error.message });
+    res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
   }
 });
 

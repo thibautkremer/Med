@@ -25,6 +25,7 @@ export default function App() {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   // Tabs for Dashboard
   const [activeWebTab, setActiveWebTab] = useState<TabType>('catalog');
@@ -85,14 +86,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Top Actions: Active Profile Badge (Mobile) + Theme Toggle */}
+          {/* Top Actions: Theme Toggle + Profile Button */}
           <div className="flex items-center gap-2">
-            {activeProfile && (
-              <div className="lg:hidden flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="max-w-[80px] truncate">{activeProfile.name.split(' ')[0]}</span>
-              </div>
-            )}
             {/* Download Android APK Button */}
             <a 
               href="/api/download-apk" 
@@ -104,6 +99,14 @@ export default function App() {
               <span>Android APK</span>
             </a>
             <ThemeToggle />
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all text-xs font-black"
+              title="Gérer les profils"
+            >
+              <User className="w-4 h-4" />
+              <span>{activeProfile ? activeProfile.name.split(' ')[0] : 'Profil'}</span>
+            </button>
           </div>
         </div>
       </header>
@@ -116,11 +119,6 @@ export default function App() {
           
           {/* Profile & Sidebar Widgets (Desktop/Tablet column 4, Mobile collapsible/top) */}
           <div className="lg:col-span-4 space-y-6">
-            <ProfileSelector
-              activeProfile={activeProfile}
-              setActiveProfile={setActiveProfile}
-              onProfilesChanged={setProfiles}
-            />
 
             {/* Beautiful gradient APK download card */}
             {!isAndroid && (
@@ -184,23 +182,6 @@ export default function App() {
                 <button onClick={() => setActiveWebTab('favorites')} className={`px-4 py-2.5 text-xs font-black rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${activeWebTab === 'favorites' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}> <Heart className="w-4 h-4" /> Favoris ({favorites.length})</button>
             </div>
 
-            {/* Mobile Header Tab Pill Indicator */}
-            <div className="lg:hidden flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-400">Section active :</span>
-                <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
-                  {activeWebTab === 'catalog' && 'Catalogue & Équivalences'}
-                  {activeWebTab === 'symptoms' && 'Analyseur Symptômes'}
-                  {activeWebTab === 'scanner' && 'Scanner Boîte Photo'}
-                  {activeWebTab === 'prescription' && 'Traducteur Ordonnance'}
-                  {activeWebTab === 'cabinet' && 'Mon Armoire & Suivi'}
-                  {activeWebTab === 'tools' && 'Outils & Calculatrices'}
-                  {activeWebTab === 'chat' && 'Assistant IA Medical'}
-                  {activeWebTab === 'favorites' && `Mes Favoris (${favorites.length})`}
-                </span>
-              </div>
-            </div>
 
             {/* Dynamic Workspace */}
             <div className="min-h-[400px]">
@@ -237,6 +218,23 @@ export default function App() {
         profiles={profiles}
         setActiveProfile={setActiveProfile}
       />
+
+      {/* Profile Modal */}
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex justify-between items-center mb-4">
+               <h3 className="font-black text-slate-800 dark:text-white">Gestion des profils</h3>
+               <button onClick={() => setIsProfileModalOpen(false)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">✕</button>
+            </div>
+            <ProfileSelector
+              activeProfile={activeProfile}
+              setActiveProfile={setActiveProfile}
+              onProfilesChanged={setProfiles}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer copyright */}
       <footer className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 py-8 text-center mt-auto text-xs text-slate-500 dark:text-slate-400 font-medium pb-24 lg:pb-8">

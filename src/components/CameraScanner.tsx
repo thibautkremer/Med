@@ -47,15 +47,24 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
     setResult(null);
 
     try {
-      const constraints = {
-        video: { facingMode: 'environment' } // Prefer back camera
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Try back camera first, then just generic camera
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (err) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+      
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setStreamActive(true);
+        try {
+          await videoRef.current.play();
+          setStreamActive(true);
+        } catch (playErr) {
+          console.error("Video play failed:", playErr);
+          setError("Impossible de démarrer la vidéo.");
+        }
       }
     } catch (err: any) {
       console.error(err);

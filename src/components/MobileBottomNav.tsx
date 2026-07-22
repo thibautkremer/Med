@@ -48,15 +48,19 @@ export default function MobileBottomNav({
     { id: 'catalog' as TabType, label: 'Catalogue', icon: BookOpen },
     { id: 'symptoms' as TabType, label: 'Symptômes', icon: Stethoscope },
     { id: 'scanner' as TabType, label: 'Scanner', icon: Camera, highlight: true },
-    { id: 'cabinet' as TabType, label: 'Armoire', icon: Package },
+    { 
+      id: 'chat' as TabType, 
+      label: 'Assistant IA', 
+      icon: MessageSquare 
+    },
   ];
 
   const secondaryNavItems = [
     { 
-      id: 'chat' as TabType, 
-      label: 'Assistant IA', 
-      desc: 'Conseils & Posologies', 
-      icon: MessageSquare, 
+      id: 'cabinet' as TabType, 
+      label: 'Armoire', 
+      desc: 'Mon Armoire & Suivi', 
+      icon: Package, 
       color: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
     },
     { 
