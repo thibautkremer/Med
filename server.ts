@@ -13,11 +13,8 @@ let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("WARNING: GEMINI_API_KEY is missing in environment variables. AI features will fallback to local mocks or fail.");
-    }
     aiClient = new GoogleGenAI({
-      apiKey: apiKey || "MOCK_KEY",
+      apiKey: apiKey || "MISSING_KEY",
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -73,28 +70,16 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     Règles absolues :
     1. Si l'état de santé semble préoccupant (gravité "medium" ou "high"), indique-le clairement et conseille d'appeler le 911 (USA) ou le 15 (France).
     2. Ne prescris rien de dangereux, indique s'il faut une ordonnance ("requiresPrescription").
-    3. Rédige le diagnostic général ("analysis") en français.`;
+    3. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
 
     const ai = getGeminiClient();
     
-    // Fallback if key is missing
-    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      console.log("Using Mock Symptom Response because API Key is not set");
-      return res.json({
-        analysis: `[MODE DÉMO] Analyse factice pour vos symptômes : "${symptoms}". Veuillez configurer la clé API Gemini pour de vrais diagnostics IA. Pour ${profile?.name || 'vous'}, nous conseillons du repos et une bonne hydratation.`,
-        severity: 'low',
-        suggestedMedications: [
-          {
-            nameFr: "Doliprane (Paracétamol)",
-            nameUs: "Tylenol (Acetaminophen)",
-            reasonFr: "Suggéré pour soulager d'éventuels maux légers ou fièvre.",
-            reasonUs: "Suggested to reduce mild fever or aches.",
-            dosageForProfileFr: profile ? `${profile.weight * 15} mg toutes les 6h, soit environ ${profile.age < 12 ? 'un dosage enfant adapté' : '1 comprimé de 500mg ou 1000mg'}` : "1000 mg toutes les 6 heures.",
-            dosageForProfileUs: profile ? `${profile.weight * 15} mg every 6 hours.` : "1000 mg every 6 hours.",
-            requiresPrescriptionFr: false,
-            requiresPrescriptionUs: false
-          }
-        ]
+    // Check if key is present and not the placeholder
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+      return res.status(403).json({ 
+        error: "Clé API Gemini manquante ou non configurée.", 
+        details: "Veuillez configurer votre clé API Gemini dans les paramètres Secrets de l'AI Studio pour activer l'analyse IA réelle." 
       });
     }
 
@@ -176,34 +161,11 @@ app.post('/api/image/analyze', async (req, res) => {
 
     const ai = getGeminiClient();
 
-    // Fallback if key is missing or is mock
-    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      console.log("Using Mock Image Response because API Key is not set");
-      // Simulate detection of a random popular medicine or fallback
-      return res.json({
-        detectedMedicine: {
-          name: "Doliprane 1000mg (Boîte Simulée)",
-          countryOfOrigin: "FR",
-          activeIngredient: "Paracétamol (Acetaminophen)",
-          purposeFr: "Traitement symptomatique des douleurs légères à modérées et de la fièvre.",
-          purposeUs: "Temporary relief of minor aches, pains, and fever reduction.",
-          equivalentFr: "Doliprane / Efferalgan / Dafalgan",
-          equivalentUs: "Tylenol / FeverAll",
-          dosageInfoFr: profile 
-            ? `Pour ${profile.name} (${profile.age} ans, ${profile.weight} kg) : Posologie recommandée de ${profile.weight * 15} mg par prise toutes les 6 heures.`
-            : "1 comprimé de 1000 mg toutes les 6 heures, maximum 4 comprimés par 24 heures.",
-          dosageInfoUs: profile
-            ? `For ${profile.name} (${profile.age} y/o, ${profile.weight} kg): Recommended dose is ${profile.weight * 15} mg every 6 hours.`
-            : "1 tablet of 1000 mg every 6 hours, maximum 4000 mg daily.",
-          requiresPrescriptionFr: false,
-          requiresPrescriptionUs: false,
-          precautionsFr: "Attention au surdosage mortel pour le foie. Ne pas prendre d'autres médicaments contenant du paracétamol.",
-          precautionsUs: "Severe liver damage may occur if you take more than 4,000 mg of acetaminophen in 24 hours.",
-          category: "pain",
-          expirationDate: "2027-12-31",
-          expirationDateFound: true,
-          batchNumber: "LOT9928"
-        }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+      return res.status(403).json({ 
+        error: "Clé API Gemini manquante.", 
+        details: "Veuillez ajouter votre clé API Gemini dans AI Studio (Settings > Secrets) pour activer le scanner de médicaments." 
       });
     }
 
@@ -279,33 +241,11 @@ app.post('/api/prescription/translate', async (req, res) => {
 
     const ai = getGeminiClient();
 
-    // Fallback if key is missing or is mock
-    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      console.log("Using Mock Prescription Response because API Key is not set");
-      return res.json({
-        originalText: prescriptionText || "Ordonnance manuscrite ou numérisée (Image)",
-        translatedInstructions: "Traduction générale : Prendre les comprimés indiqués pendant les repas. En cas d'effets secondaires, stopper immédiatement.",
-        medicationsFound: [
-          {
-            originalName: "Doliprane 1g",
-            molecule: "Paracétamol",
-            usEquivalent: "Tylenol Extra Strength (Acetaminophen 500mg) - En vente libre (OTC)",
-            purpose: "Anti-douleur et fièvre (Analgésique / Antipyretic)",
-            dosage: "1 comprimé toutes les 6 heures si maux de tête. Maximum 4g par jour.",
-            isPrescriptionOnlyUS: false,
-            isPrescriptionOnlyFR: false
-          },
-          {
-            originalName: "Spasfon 80mg",
-            molecule: "Phloroglucinol",
-            usEquivalent: "Bentyl (Dicyclomine) - Uniquement sur ordonnance aux USA (Rx) • Alternative OTC possible : Pepto-Bismol ou Imodium selon le type exact de maux.",
-            purpose: "Antispasmodique pour douleurs abdominales / contractions",
-            dosage: "2 comprimés lors de la crise, à renouveler si maux persistants.",
-            isPrescriptionOnlyUS: true,
-            isPrescriptionOnlyFR: false
-          }
-        ],
-        generalPrecautions: "Ne dépassez jamais les doses prescrites. Attention aux interactions médicamenteuses si vous combinez ces boîtes avec des remèdes américains."
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+      return res.status(403).json({ 
+        error: "Clé API Gemini manquante.", 
+        details: "L'IA a besoin d'une clé API valide pour analyser les ordonnances." 
       });
     }
 
@@ -381,12 +321,11 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
 
     const ai = getGeminiClient();
 
-    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      return res.json({
-        expirationDate: "2027-10-31",
-        expirationDateFound: true,
-        batchNumber: "LOT-SCAN-772",
-        confidenceMessage: "Date de péremption détectée : Octobre 2027 (Mode Démo)"
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+      return res.status(403).json({ 
+        error: "Clé API Gemini manquante.", 
+        details: "La lecture de date par IA nécessite une clé API valide." 
       });
     }
 
@@ -447,10 +386,11 @@ Règles de réponse :
 
     const ai = getGeminiClient();
 
-    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      const lastMsg = messages[messages.length - 1]?.text || "";
-      return res.json({
-        reply: `[MODE DÉMO IA] Merci pour votre question ("${lastMsg}"). En mode démo, notez que le Doliprane français (Paracétamol) correspond au Tylenol (Acetaminophen) aux USA. Pour ${profile?.name || 'vous'}, veillez à respecter les doses journalières maximales (4g par 24h pour un adulte). Activez la clé API Gemini pour des réponses interactives illimitées !`
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+      return res.status(403).json({ 
+        error: "Clé API Gemini manquante.", 
+        details: "L'assistant IA interactif nécessite une clé API configurée dans AI Studio." 
       });
     }
 
