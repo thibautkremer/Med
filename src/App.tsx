@@ -16,7 +16,7 @@ import { MEDICATIONS_DATABASE } from './data/medications';
 import { 
   Pill, Heart, Camera, Stethoscope, User, 
   Activity, BookOpen, ShieldCheck, Search, HelpCircle, HeartHandshake,
-  FileText, Package, Ruler, MessageSquare, ChevronRight, Sparkles
+  FileText, Package, Ruler, MessageSquare, ChevronRight, Sparkles, Download
 } from 'lucide-react';
 
 
@@ -87,6 +87,16 @@ export default function App() {
                 <span className="max-w-[80px] truncate">{activeProfile.name.split(' ')[0]}</span>
               </div>
             )}
+            {/* Download Android APK Button */}
+            <a 
+              href="/api/download-apk" 
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-black transition-all border border-emerald-200 dark:border-emerald-800"
+              title="Télécharger l'application Android (APK)"
+              download
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Android APK</span>
+            </a>
             <ThemeToggle />
           </div>
         </div>
@@ -105,6 +115,30 @@ export default function App() {
               setActiveProfile={setActiveProfile}
               onProfilesChanged={setProfiles}
             />
+
+            {/* Beautiful gradient APK download card */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-700 dark:to-teal-800 rounded-2xl p-5 text-white shadow-md shadow-emerald-500/10 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Download className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black tracking-tight leading-none uppercase">App Android (APK)</h4>
+                  <p className="text-[10px] text-emerald-100 font-bold mt-1">Liaison Mobile Native</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-emerald-50 leading-relaxed font-semibold">
+                Profitez de performances de scan instantanées, de l'accès direct à l'appareil photo et d'une fluidité parfaite en déplacement.
+              </p>
+              <a 
+                href="/api/download-apk" 
+                className="w-full py-2.5 bg-white hover:bg-slate-50 text-emerald-800 dark:text-emerald-900 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                download
+              >
+                <Download className="w-3.5 h-3.5" />
+                Installer l'APK (5.0 MB)
+              </a>
+            </div>
             
             {/* Quick shortcuts in a bento card */}
             <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">

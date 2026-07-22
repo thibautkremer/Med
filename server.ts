@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
@@ -37,6 +38,17 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Serve the static database of medications
 app.get('/api/medications', (req, res) => {
   res.json(MEDICATIONS_DATABASE);
+});
+
+// Endpoint to download the latest compiled Android APK
+app.get('/api/download-apk', (req, res) => {
+  const apkPath = path.join(process.cwd(), 'app-debug.apk');
+  if (fs.existsSync(apkPath)) {
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.download(apkPath, 'PharmacieTransatlantique-debug.apk');
+  } else {
+    res.status(404).send("L'APK n'a pas encore été récupéré de GitHub. Veuillez réessayer dans quelques instants.");
+  }
 });
 
 // API endpoint for symptom checker
