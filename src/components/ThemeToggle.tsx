@@ -3,33 +3,10 @@ import { Sun, Moon } from 'lucide-react';
 
 interface ThemeToggleProps {
   isDark: boolean;
-  setIsDark: (isDark: boolean) => void;
+  toggleTheme: () => void;
 }
 
-export default function ThemeToggle({ isDark, setIsDark }: ThemeToggleProps) {
-  useEffect(() => {
-    // Check local storage or system preference
-    const darkMode = localStorage.getItem('dark') === 'true' || 
-                     (!localStorage.getItem('dark') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    setIsDark(darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [setIsDark]);
-
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    localStorage.setItem('dark', String(newIsDark));
-    if (newIsDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
+export default function ThemeToggle({ isDark, toggleTheme }: ThemeToggleProps) {
   return (
     <button
       onClick={toggleTheme}

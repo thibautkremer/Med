@@ -31,8 +31,14 @@ export default function App() {
   // Tabs for Dashboard
   const [activeWebTab, setActiveWebTab] = useState<TabType>('catalog');
   
-  // Load favorites from LocalStorage
+  // Theme and App Initialization
   useEffect(() => {
+    // Theme setup
+    const darkMode = localStorage.getItem('dark') === 'true' || 
+                     (!localStorage.getItem('dark') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDark(darkMode);
+
+    // Load favorites from LocalStorage
     const saved = localStorage.getItem('pharmacie_favorites');
     if (saved) {
       try {
@@ -62,6 +68,19 @@ export default function App() {
         setIsAndroid(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('dark', String(isDark));
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark(!isDark);
+  
+  // Load favorites from LocalStorage
 
   const toggleFavorite = (id: string) => {
     let updated;
@@ -114,7 +133,7 @@ export default function App() {
               <Download className="w-3.5 h-3.5" />
               <span>Android APK</span>
             </a>
-            <ThemeToggle isDark={isDark} setIsDark={setIsDark} />
+            <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} />
             <button
               onClick={() => setIsProfileModalOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all text-xs font-black"
