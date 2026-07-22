@@ -39,9 +39,13 @@ jobs:
         run: |
           npm install @capacitor/cli @capacitor/core @capacitor/android
 
-      - name: Initialize Capacitor Android Project
+      - name: Initialize Capacitor Android Project (if not exists)
         run: |
-          npx cap add android
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "Android directory already exists. Skipping 'cap add'."
+          fi
 
       - name: Sync web assets to Capacitor Android
         run: |

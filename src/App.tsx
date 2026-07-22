@@ -177,7 +177,7 @@ export default function App() {
                   {activeWebTab === 'prescription' && (<PrescriptionTranslator activeProfile={activeProfile} />)}
                   {activeWebTab === 'cabinet' && (<MedicineCabinet activeProfile={activeProfile} profiles={profiles} />)}
                   {activeWebTab === 'tools' && (<MedicalTools />)}
-                  {activeWebTab === 'chat' && (<AIChat />)}
+                  {activeWebTab === 'chat' && (<AIChat activeProfile={activeProfile} />)}
                   {activeWebTab === 'favorites' && (<FavoritesList favorites={favorites} toggleFavorite={toggleFavorite} activeProfile={activeProfile} onSelectMedication={handleSelectMedicationFromShortcut} />)}
                 </motion.div>
               </AnimatePresence>

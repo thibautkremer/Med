@@ -146,6 +146,8 @@ app.post('/api/image/analyze', async (req, res) => {
       : "Patient adulte standard.";
 
     const prompt = `Analyse l'image de cette boîte de médicament fournie. Identifie précisément la marque, la substance active, l'origine, l'usage, les équivalences franco-américaines (si c'est français, donne l'équivalent américain et inversement), et les précautions importantes.
+    Aussi, examine attentivement l'image pour repérer la DATE DE PÉREMPTION (expiration date / EXP / Valide jusqu'au) et le numéro de lot s'ils sont lisibles sur la boîte, le rabat ou le blister.
+    Format de date attendu si trouvée : AAAA-MM-JJ ou AAAA-MM (ex: 2027-12-31 ou 2028-06). Si la date de péremption n'est pas clairement visible sur cette image, fixe expirationDateFound à false.
     S'il te plaît, donne des instructions de posologie adaptées à ce profil de patient : ${patientDesc}.
     Rédige les explications françaises avec précision.`;
 
@@ -185,7 +187,10 @@ app.post('/api/image/analyze', async (req, res) => {
           requiresPrescriptionUs: false,
           precautionsFr: "Attention au surdosage mortel pour le foie. Ne pas prendre d'autres médicaments contenant du paracétamol.",
           precautionsUs: "Severe liver damage may occur if you take more than 4,000 mg of acetaminophen in 24 hours.",
-          category: "pain"
+          category: "pain",
+          expirationDate: "2027-12-31",
+          expirationDateFound: true,
+          batchNumber: "LOT9928"
         }
       });
     }
@@ -214,12 +219,16 @@ app.post('/api/image/analyze', async (req, res) => {
                 requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether prescription is required in the USA." },
                 precautionsFr: { type: Type.STRING, description: "Main side effects and warnings in French." },
                 precautionsUs: { type: Type.STRING, description: "Main side effects and warnings in English." },
-                category: { type: Type.STRING, description: "Suggested category: 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'." }
+                category: { type: Type.STRING, description: "Suggested category: 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'." },
+                expirationDate: { type: Type.STRING, description: "Detected expiration date (YYYY-MM-DD or YYYY-MM) if readable, else empty string." },
+                expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly read on the image." },
+                batchNumber: { type: Type.STRING, description: "Batch / Lot number if readable." }
               },
               required: [
                 "name", "countryOfOrigin", "activeIngredient", "purposeFr", "purposeUs", 
                 "equivalentFr", "equivalentUs", "dosageInfoFr", "dosageInfoUs", 
-                "requiresPrescriptionFr", "requiresPrescriptionUs", "precautionsFr", "precautionsUs", "category"
+                "requiresPrescriptionFr", "requiresPrescriptionUs", "precautionsFr", "precautionsUs", "category",
+                "expirationDateFound"
               ]
             }
           },
@@ -342,6 +351,110 @@ app.post('/api/prescription/translate', async (req, res) => {
   } catch (error: any) {
     console.error("Prescription Translation Error:", error);
     res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
+  }
+});
+
+// API endpoint specifically for scanning a close-up photo of an expiration date
+app.post('/api/image/analyze-expiration', async (req, res) => {
+  try {
+    const { imageBase64, mimeType } = req.body;
+
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Image requise." });
+    }
+
+    const prompt = `Cette image est un gros plan ou une photo du verso/côté d'un médicament ou d'une boîte.
+    Analyse l'image pour extraire LA DATE DE PÉREMPTION (Expiry date, EXP, MM/YY, YYYY-MM, etc.) et le numéro de lot (Batch / Lot #).
+    Renvoie la date au format YYYY-MM-DD ou YYYY-MM (ex: 2027-12-31 ou 2028-06). Si tu ne trouves pas la date, fixe expirationDateFound à false.`;
+
+    const ai = getGeminiClient();
+
+    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
+      return res.json({
+        expirationDate: "2027-10-31",
+        expirationDateFound: true,
+        batchNumber: "LOT-SCAN-772",
+        confidenceMessage: "Date de péremption détectée : Octobre 2027 (Mode Démo)"
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: [
+        { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
+        { text: prompt }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            expirationDate: { type: Type.STRING, description: "Extracted expiration date YYYY-MM-DD or YYYY-MM" },
+            expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly detected" },
+            batchNumber: { type: Type.STRING, description: "Batch or Lot number if present" },
+            confidenceMessage: { type: Type.STRING, description: "Explanation in French of what was read on the image" }
+          },
+          required: ["expirationDate", "expirationDateFound", "confidenceMessage"]
+        }
+      }
+    });
+
+    const resultText = response.text;
+    if (!resultText) throw new Error("No response text from Gemini");
+    res.json(JSON.parse(resultText));
+  } catch (error: any) {
+    console.error("Expiration Scan Error:", error);
+    res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });
+  }
+});
+
+// API endpoint for interactive AI Chat Assistant
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { messages, profile } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Messages requis." });
+    }
+
+    const patientDesc = profile 
+      ? `Patient actif : ${profile.name}, ${profile.gender}, ${profile.age} ans, ${profile.weight} kg, ${profile.height} cm.`
+      : "Aucun profil patient spécifié (adulte type).";
+
+    const systemPrompt = `Tu es l'Assistant IA Pharmacien Virtuel de "Pharmacie Transatlantique".
+Ta mission est d'aider les utilisateurs franco-américains (expatriés, voyageurs, familles) à comprendre les équivalences de médicaments entre la France 🇫🇷 et les États-Unis 🇺🇸, leurs usages, posologies, et avertissements de santé.
+
+Contexte : ${patientDesc}
+
+Règles de réponse :
+1. Rédige en français clair, bienveillant, structuré et professionnel.
+2. Indique toujours la molécule active (ex: Paracétamol = Acetaminophen, Ibuprofène = Ibuprofen).
+3. Précise le statut légal aux USA : Rx (Sur ordonnance) vs OTC (Over-The-Counter / Vente libre).
+4. Adapte les conseils au profil du patient si pertinent.
+5. Rappelle de toujours consulter un médecin ou pharmacien en cas de symptôme grave ou doute.`;
+
+    const ai = getGeminiClient();
+
+    if (process.env.GEMINI_API_KEY === undefined || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
+      const lastMsg = messages[messages.length - 1]?.text || "";
+      return res.json({
+        reply: `[MODE DÉMO IA] Merci pour votre question ("${lastMsg}"). En mode démo, notez que le Doliprane français (Paracétamol) correspond au Tylenol (Acetaminophen) aux USA. Pour ${profile?.name || 'vous'}, veillez à respecter les doses journalières maximales (4g par 24h pour un adulte). Activez la clé API Gemini pour des réponses interactives illimitées !`
+      });
+    }
+
+    const promptText = `${systemPrompt}\n\nHistorique de la conversation :\n` + 
+      messages.map((m: any) => `${m.role === 'user' ? 'Utilisateur' : 'Assistant'}: ${m.text}`).join('\n') +
+      `\nAssistant:`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: promptText,
+    });
+
+    res.json({ reply: response.text });
+  } catch (error: any) {
+    console.error("AI Chat Error:", error);
+    res.status(500).json({ error: "Erreur de réponse de l'assistant IA: " + error.message });
   }
 });
 

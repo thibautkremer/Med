@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UserProfile, ImageAnalysisResponse } from '../types';
+import { UserProfile, ImageAnalysisResponse, CabinetItem } from '../types';
 import { 
   Camera, Upload, RefreshCw, AlertTriangle, CheckCircle, 
-  HelpCircle, Eye, ShoppingBag, ArrowRight, ShieldCheck, Heart, Trash2
+  HelpCircle, Eye, ShoppingBag, ArrowRight, ShieldCheck, Heart, Trash2,
+  Calendar, Package, Plus, Sparkles
 } from 'lucide-react';
 
 interface CameraScannerProps {
@@ -62,9 +63,19 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // States for Adding to Armoire & Secondary Expiration Scan
+  const [showAddToCabinet, setShowAddToCabinet] = useState(false);
+  const [cabinetStockQty, setCabinetStockQty] = useState(30);
+  const [cabinetExpDate, setCabinetExpDate] = useState('');
+  const [cabinetAddedSuccess, setCabinetAddedSuccess] = useState<string | null>(null);
+  const [scanningExpDate, setScanningExpDate] = useState(false);
+  const [expScanSuccess, setExpScanSuccess] = useState<string | null>(null);
+  const [expScanError, setExpScanError] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const expFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Stop video stream on unmount
   useEffect(() => {
@@ -217,12 +228,96 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
 
       const data = await response.json();
       setResult(data);
+
+      if (data.detectedMedicine?.expirationDate) {
+        setCabinetExpDate(data.detectedMedicine.expirationDate);
+      }
     } catch (err: any) {
       console.error(err);
       setError("L'analyse visuelle a échoué. Veuillez réessayer avec un éclairage plus clair ou saisir manuellement.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Secondary photo scan specifically for expiration date
+  const handleScanExpirationPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScanningExpDate(true);
+    setExpScanError(null);
+    setExpScanSuccess(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const rawBase64 = base64.split(',')[1];
+
+        const res = await fetch('/api/image/analyze-expiration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: rawBase64, mimeType: file.type })
+        });
+
+        if (!res.ok) throw new Error("Erreur serveur lors de la lecture de la date.");
+
+        const data = await res.json();
+        if (data.expirationDate) {
+          setResult(prev => prev ? {
+            ...prev,
+            detectedMedicine: {
+              ...prev.detectedMedicine,
+              expirationDate: data.expirationDate,
+              expirationDateFound: true,
+              batchNumber: data.batchNumber || prev.detectedMedicine.batchNumber
+            }
+          } : prev);
+          setCabinetExpDate(data.expirationDate);
+          setExpScanSuccess(`Date détectée avec succès : ${data.expirationDate} ${data.batchNumber ? `(Lot ${data.batchNumber})` : ''}`);
+        } else {
+          setExpScanError("Date de péremption introuvable sur cette photo. Entrez-la manuellement ci-dessous.");
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setExpScanError("Erreur lors de la lecture de l'image de date.");
+    } finally {
+      setScanningExpDate(false);
+    }
+  };
+
+  // Save detected medication directly to user cabinet
+  const handleSaveToCabinet = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!result || !result.detectedMedicine) return;
+
+    const med = result.detectedMedicine;
+    const existingRaw = localStorage.getItem('pharmacie_cabinet');
+    let currentCabinet: CabinetItem[] = [];
+    if (existingRaw) {
+      try { currentCabinet = JSON.parse(existingRaw); } catch(err) {}
+    }
+
+    const newItem: CabinetItem = {
+      id: `cab-${Date.now()}`,
+      medicationName: med.name,
+      activeIngredient: med.activeIngredient,
+      country: med.countryOfOrigin === 'US' ? 'US' : 'FR',
+      stockQuantity: Number(cabinetStockQty),
+      initialQuantity: Number(cabinetStockQty),
+      expirationDate: cabinetExpDate || med.expirationDate || undefined,
+      lowStockAlert: Number(cabinetStockQty) <= 5,
+      notes: med.batchNumber ? `N° de lot : ${med.batchNumber}` : undefined
+    };
+
+    const updated = [newItem, ...currentCabinet];
+    localStorage.setItem('pharmacie_cabinet', JSON.stringify(updated));
+
+    setCabinetAddedSuccess(`"${med.name}" a bien été ajouté à votre armoire à pharmacie !`);
+    setShowAddToCabinet(false);
+    setTimeout(() => setCabinetAddedSuccess(null), 5000);
   };
 
   const handleReset = () => {
@@ -421,6 +516,141 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
           </div>
 
           <div className="p-6 space-y-6">
+
+            {/* Toast notification for adding to cabinet */}
+            {cabinetAddedSuccess && (
+              <div className="bg-emerald-600 text-white font-semibold text-xs px-4 py-3 rounded-xl shadow-lg border border-emerald-500/10 flex items-center gap-2 animate-bounce-short">
+                <CheckCircle className="w-4 h-4 text-emerald-100 shrink-0" />
+                <p>{cabinetAddedSuccess}</p>
+              </div>
+            )}
+
+            {/* Expiration Date Detection Block */}
+            <div className="border border-slate-100 rounded-xl p-4 bg-purple-50/20 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                    Date de Péremption & Traçabilité
+                  </h4>
+                  {result.detectedMedicine.expirationDateFound ? (
+                    <p className="text-xs font-semibold text-emerald-700 mt-1 flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      Date de péremption détectée : <strong>{result.detectedMedicine.expirationDate}</strong>
+                      {result.detectedMedicine.batchNumber && (
+                        <span className="text-[10px] text-slate-500 font-normal"> (Lot : {result.detectedMedicine.batchNumber})</span>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-700 mt-1 font-medium">
+                      ⚠️ Date de péremption non lisible sur la face principale. Vous pouvez la photographier spécifiquement ci-dessous.
+                    </p>
+                  )}
+                </div>
+
+                {/* Secondary photo scan button */}
+                <div>
+                  <input
+                    type="file"
+                    ref={expFileInputRef}
+                    onChange={handleScanExpirationPhoto}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => expFileInputRef.current?.click()}
+                    disabled={scanningExpDate}
+                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {scanningExpDate ? 'Analyse de la date...' : '📷 Scanner le verso/côté'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Feedback banners for expiration scan */}
+              {expScanSuccess && (
+                <div className="bg-emerald-50 text-emerald-800 p-2.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <p>{expScanSuccess}</p>
+                </div>
+              )}
+              {expScanError && (
+                <div className="bg-amber-50 text-amber-800 p-2.5 rounded-lg text-xs flex items-center gap-1.5 font-medium">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <p>{expScanError}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Bar: Add to Armoire button */}
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-indigo-600 shrink-0" />
+                <div>
+                  <h4 className="font-bold text-slate-800 text-xs">Voulez-vous ajouter ce médicament à votre Armoire à Pharmacie ?</h4>
+                  <p className="text-[11px] text-slate-500">Suivez le stock restants et recevez des alertes avant péremption.</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddToCabinet(!showAddToCabinet)}
+                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                {showAddToCabinet ? 'Fermer le formulaire' : '➕ Ajouter à mon Armoire'}
+              </button>
+            </div>
+
+            {/* Expandable Add to Cabinet form */}
+            {showAddToCabinet && (
+              <form onSubmit={handleSaveToCabinet} className="bg-white rounded-xl border-2 border-indigo-500 p-4 space-y-3 animate-fade-in shadow-md">
+                <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b pb-2">
+                  <Package className="w-4 h-4 text-indigo-600" />
+                  Ajouter "{result.detectedMedicine.name}" à mon Armoire
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="font-bold text-slate-600 block mb-1">Nombre de doses / comprimés en stock :</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      required
+                      value={cabinetStockQty}
+                      onChange={(e) => setCabinetStockQty(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-600 block mb-1">Date de péremption :</label>
+                    <input
+                      type="date"
+                      value={cabinetExpDate}
+                      onChange={(e) => setCabinetExpDate(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    {!cabinetExpDate && (
+                      <p className="text-[10px] text-slate-400 mt-0.5">Laissez vide ou utilisez le bouton "Scanner le verso" ci-dessus.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-2 text-right">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
+                  >
+                    Valider et Enregistrer dans l'Armoire
+                  </button>
+                </div>
+              </form>
+            )}
+
             {/* Usage indication split */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">

@@ -79,6 +79,9 @@ export interface ImageAnalysisResponse {
     precautionsFr: string;
     precautionsUs: string;
     category: string;
+    expirationDate?: string; // Formatted YYYY-MM-DD or YYYY-MM if detected
+    expirationDateFound: boolean;
+    batchNumber?: string;
   };
 }
 
