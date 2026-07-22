@@ -24,6 +24,7 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<UserProfile | null>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isDark, setIsDark] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
@@ -36,6 +37,21 @@ export default function App() {
     if (saved) {
       try {
         setFavorites(JSON.parse(saved));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    // Load profiles from LocalStorage
+    const savedProfiles = localStorage.getItem('pharmacie_profiles');
+    if (savedProfiles) {
+      try {
+        const parsed = JSON.parse(savedProfiles);
+        setProfiles(parsed);
+        if (parsed.length > 0) {
+          const active = parsed.find((p: UserProfile) => p.isDefault) || parsed[0];
+          setActiveProfile(active);
+        }
       } catch (e) {
         console.error(e);
       }
@@ -98,7 +114,7 @@ export default function App() {
               <Download className="w-3.5 h-3.5" />
               <span>Android APK</span>
             </a>
-            <ThemeToggle />
+            <ThemeToggle isDark={isDark} setIsDark={setIsDark} />
             <button
               onClick={() => setIsProfileModalOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all text-xs font-black"
