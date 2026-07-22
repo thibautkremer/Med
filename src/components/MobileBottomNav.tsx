@@ -42,7 +42,7 @@ export default function MobileBottomNav({
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   // Check if active tab is in secondary items
-  const isSecondaryActive = ['prescription', 'tools', 'favorites', 'chat'].includes(activeTab);
+  const isSecondaryActive = ['prescription', 'tools', 'favorites', 'cabinet'].includes(activeTab);
 
   const mainNavItems = [
     { id: 'catalog' as TabType, label: 'Catalogue', icon: BookOpen },
@@ -97,13 +97,6 @@ export default function MobileBottomNav({
       {/* Fixed Android Bottom Navigation Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 py-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
         <nav className="flex items-center justify-around max-w-md mx-auto">
-          {/* Active Profile Indicator */}
-          {activeProfile && (
-            <div className="flex flex-col items-center gap-0.5 text-[9px] font-black text-emerald-700 dark:text-emerald-400">
-               <User className="w-3.5 h-3.5" />
-               <span className="max-w-[50px] truncate">{activeProfile.name.split(' ')[0]}</span>
-            </div>
-          )}
           {mainNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -305,14 +298,6 @@ export default function MobileBottomNav({
                   })}
                 </div>
               </div>
-
-              {/* Close Action Button */}
-              <button
-                onClick={() => setIsMoreOpen(false)}
-                className="w-full py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs text-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                Fermer le menu
-              </button>
             </motion.div>
           </div>
         )}
