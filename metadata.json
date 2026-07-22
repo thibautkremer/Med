@@ -1,0 +1,6 @@
+{
+  "name": "Pharmacie Transatlantique",
+  "description": "Assistant de pharmacie franco-américain avec équivalences de médicaments, profils personnalisés, analyseur de symptômes et scanner de boîte de médicament par IA.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
