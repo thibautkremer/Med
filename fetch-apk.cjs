@@ -5,9 +5,9 @@ const { execSync } = require('child_process');
 const TOKEN = process.env.GITHUB_TOKEN;
 const REPO = 'thibautkremer/Med';
 
-if (!TOKEN) {
-  console.error("Error: GITHUB_TOKEN environment variable is not set.");
-  process.exit(1);
+if (!TOKEN || process.env.CI || process.env.GITHUB_ACTIONS) {
+  console.log("Skipping automatic APK download during CI build.");
+  process.exit(0);
 }
 
 async function run() {
