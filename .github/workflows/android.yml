@@ -51,6 +51,11 @@ jobs:
         run: |
           npx cap sync android
 
+      - name: Ensure valid gradle-wrapper.jar
+        run: |
+          mkdir -p android/gradle/wrapper
+          curl -L -o android/gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
+
       - name: Build Android Debug APK
         run: |
           cd android
