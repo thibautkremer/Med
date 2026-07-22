@@ -30,7 +30,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.11.1'
+          gradle-version: '8.14.3'
 
       - name: Install dependencies
         run: |
@@ -59,7 +59,7 @@ jobs:
       - name: Build Android Debug APK
         run: |
           cd android
-          gradle wrapper --gradle-version 8.11.1
+          gradle wrapper --gradle-version 8.14.3
           chmod +x gradlew
           ./gradlew assembleDebug
 
