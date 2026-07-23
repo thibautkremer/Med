@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
@@ -44,6 +45,7 @@ const getReqApiKey = (req: express.Request): string | null => {
 };
 
 const app = express();
+app.use(cors());
 const PORT = 3000;
 
 // Increase payload limits for base64 photo transfer
