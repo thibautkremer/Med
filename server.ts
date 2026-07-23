@@ -9,33 +9,6 @@ import { MEDICATIONS_DATABASE } from './src/data/medications';
 
 dotenv.config();
 
-// Lazy initialize Gemini AI client to prevent startup crashes if GEMINI_API_KEY is missing
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(runtimeKey?: string): GoogleGenAI {
-  if (runtimeKey) {
-    return new GoogleGenAI({
-      apiKey: runtimeKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    aiClient = new GoogleGenAI({
-      apiKey: apiKey || "MISSING_KEY",
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiClient;
-}
-
 const getReqApiKey = (req: express.Request): string | null => {
     console.log('DEBUG: Headers received:', req.headers);
     const key = req.header('X-Gemini-API-Key') || process.env.GEMINI_API_KEY || null;
@@ -132,52 +105,62 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     4. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
 
     const runtimeKey = getReqApiKey(req) || undefined;
-    const ai = getGeminiClient(runtimeKey);
+    console.log('DEBUG: /api/symptoms/analyze called. Key status:', runtimeKey ? `Present (length: ${runtimeKey.length})` : "Missing");
     
     // Check if key is present and not the placeholder
-    const apiKey = runtimeKey;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+    if (!runtimeKey || runtimeKey === "MY_GEMINI_API_KEY" || runtimeKey === "MISSING_KEY") {
+      console.error('DEBUG: /api/symptoms/analyze Auth error: Key missing/invalid');
       return res.status(403).json({ 
         error: "Clé API Gemini manquante ou non configurée.", 
         details: "Veuillez configurer votre clé API Gemini dans les paramètres Secrets de l'AI Studio pour activer l'analyse IA réelle." 
       });
     }
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            analysis: { type: Type.STRING, description: "Detailed advice, diagnostics and safety recommendations written in French." },
-            severity: { type: Type.STRING, description: "Severity of symptoms. Must be 'low', 'medium', or 'high'." },
-            suggestedMedications: {
-              type: Type.ARRAY,
-              description: "List of suggested brand or generic medications (FR and US equivalents).",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  nameFr: { type: Type.STRING, description: "French brand or generic name." },
-                  nameUs: { type: Type.STRING, description: "US brand or generic equivalent name." },
-                  reasonFr: { type: Type.STRING, description: "Why this medicine is suggested (in French)." },
-                  reasonUs: { type: Type.STRING, description: "Why this medicine is suggested (in English)." },
-                  dosageForProfileFr: { type: Type.STRING, description: "Custom dosage instructions in French adjusted for this specific patient (age/weight)." },
-                  dosageForProfileUs: { type: Type.STRING, description: "Custom dosage instructions in English adjusted for this specific patient (age/weight)." },
-                  requiresPrescriptionFr: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in France." },
-                  requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in the US." },
-                  unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
-                  pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
-                },
-                required: ["nameFr", "nameUs", "reasonFr", "reasonUs", "dosageForProfileFr", "dosageForProfileUs", "requiresPrescriptionFr", "requiresPrescriptionUs", "unsafeForPregnancy", "pregnancyWarningFr"]
-              }
-            }
-          },
-          required: ["analysis", "severity", "suggestedMedications"]
-        }
-      }
+    
+    const ai = new GoogleGenAI({
+      apiKey: runtimeKey
     });
+
+    try {
+        const response = await ai.models.generateContent({
+          model: "gemini-3.6-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                analysis: { type: Type.STRING, description: "Detailed advice, diagnostics and safety recommendations written in French." },
+                severity: { type: Type.STRING, description: "Severity of symptoms. Must be 'low', 'medium', or 'high'." },
+                suggestedMedications: {
+                  type: Type.ARRAY,
+                  description: "List of suggested brand or generic medications (FR and US equivalents).",
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      nameFr: { type: Type.STRING, description: "French brand or generic name." },
+                      nameUs: { type: Type.STRING, description: "US brand or generic equivalent name." },
+                      reasonFr: { type: Type.STRING, description: "Why this medicine is suggested (in French)." },
+                      reasonUs: { type: Type.STRING, description: "Why this medicine is suggested (in English)." },
+                      dosageForProfileFr: { type: Type.STRING, description: "Custom dosage instructions in French adjusted for this specific patient (age/weight)." },
+                      dosageForProfileUs: { type: Type.STRING, description: "Custom dosage instructions in English adjusted for this specific patient (age/weight)." },
+                      requiresPrescriptionFr: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in France." },
+                      requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in the US." },
+                      unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                      pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
+                    },
+                    required: ["nameFr", "nameUs", "reasonFr", "reasonUs", "dosageForProfileFr", "dosageForProfileUs", "requiresPrescriptionFr", "requiresPrescriptionUs", "unsafeForPregnancy", "pregnancyWarningFr"]
+                  }
+                }
+              },
+              required: ["analysis", "severity", "suggestedMedications"]
+            }
+          }
+        });
+        console.log('DEBUG: /api/symptoms/analyze Gemini API success');
+    } catch (e) {
+        console.error('DEBUG: /api/symptoms/analyze Gemini API catch block:', e);
+        throw e;
+    }
 
     let resultText = response.text;
     if (typeof resultText !== 'string' || resultText.trim() === '') {
@@ -228,62 +211,72 @@ app.post('/api/image/analyze', async (req, res) => {
     };
 
     const runtimeKey = getReqApiKey(req) || undefined;
-    const ai = getGeminiClient(runtimeKey);
-
-    const apiKey = runtimeKey;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+    console.log('DEBUG: /api/scan-medication called. Key status:', runtimeKey ? `Present (length: ${runtimeKey.length})` : "Missing");
+    
+    if (!runtimeKey || runtimeKey === "MY_GEMINI_API_KEY" || runtimeKey === "MISSING_KEY") {
+      console.error('DEBUG: /api/scan-medication Auth error');
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
         details: "Veuillez ajouter votre clé API Gemini dans AI Studio (Settings > Secrets) pour activer le scanner de médicaments." 
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: [imagePart, textPart],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            detectedMedicine: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING, description: "The name of the detected medicine." },
-                countryOfOrigin: { type: Type.STRING, description: "Country of marketing: 'FR', 'US', or 'Unknown'." },
-                activeIngredient: { type: Type.STRING, description: "Active ingredient name (API), e.g., 'Ibuprofène' or 'Acetaminophen'." },
-                purposeFr: { type: Type.STRING, description: "Indications/purpose in French." },
-                purposeUs: { type: Type.STRING, description: "Indications/purpose in English." },
-                equivalentFr: { type: Type.STRING, description: "Equivalent brand/generic in France (if scanned a US medicine, or repeat name if French)." },
-                equivalentUs: { type: Type.STRING, description: "Equivalent brand/generic in the US (if scanned a FR medicine, or repeat name if US)." },
-                dosageInfoFr: { type: Type.STRING, description: "Custom dosing guide in French adjusted for the provided patient's age and weight." },
-                dosageInfoUs: { type: Type.STRING, description: "Custom dosing guide in English adjusted for the provided patient's age and weight." },
-                requiresPrescriptionFr: { type: Type.BOOLEAN, description: "Whether prescription is required in France." },
-                requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether prescription is required in the USA." },
-                precautionsFr: { type: Type.STRING, description: "Main side effects and warnings in French." },
-                precautionsUs: { type: Type.STRING, description: "Main side effects and warnings in English." },
-                category: { type: Type.STRING, description: "Suggested category: 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'." },
-                expirationDate: { type: Type.STRING, description: "Detected expiration date (YYYY-MM-DD or YYYY-MM) if readable, else empty string." },
-                expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly read on the image." },
-                batchNumber: { type: Type.STRING, description: "Batch / Lot number if readable." },
-                unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
-                pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
-              },
-              required: [
-                "name", "countryOfOrigin", "activeIngredient", "purposeFr", "purposeUs", 
-                "equivalentFr", "equivalentUs", "dosageInfoFr", "dosageInfoUs", 
-                "requiresPrescriptionFr", "requiresPrescriptionUs", "precautionsFr", "precautionsUs", "category",
-                "expirationDateFound"
-              ]
-            }
-          },
-          required: ["detectedMedicine"]
-        }
-      }
+    const ai = new GoogleGenAI({
+      apiKey: runtimeKey
     });
 
-    const resultText = response.text;
-    res.json(cleanAndParseJSON(resultText));
+    try {
+        const response = await ai.models.generateContent({
+          model: "gemini-3.6-flash",
+          contents: [imagePart, textPart],
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                detectedMedicine: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: "The name of the detected medicine." },
+                    countryOfOrigin: { type: Type.STRING, description: "Country of marketing: 'FR', 'US', or 'Unknown'." },
+                    activeIngredient: { type: Type.STRING, description: "Active ingredient name (API), e.g., 'Ibuprofène' or 'Acetaminophen'." },
+                    purposeFr: { type: Type.STRING, description: "Indications/purpose in French." },
+                    purposeUs: { type: Type.STRING, description: "Indications/purpose in English." },
+                    equivalentFr: { type: Type.STRING, description: "Equivalent brand/generic in France (if scanned a US medicine, or repeat name if French)." },
+                    equivalentUs: { type: Type.STRING, description: "Equivalent brand/generic in the US (if scanned a FR medicine, or repeat name if US)." },
+                    dosageInfoFr: { type: Type.STRING, description: "Custom dosing guide in French adjusted for the provided patient's age and weight." },
+                    dosageInfoUs: { type: Type.STRING, description: "Custom dosing guide in English adjusted for the provided patient's age and weight." },
+                    requiresPrescriptionFr: { type: Type.BOOLEAN, description: "Whether prescription is required in France." },
+                    requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether prescription is required in the USA." },
+                    precautionsFr: { type: Type.STRING, description: "Main side effects and warnings in French." },
+                    precautionsUs: { type: Type.STRING, description: "Main side effects and warnings in English." },
+                    category: { type: Type.STRING, description: "Suggested category: 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'." },
+                    expirationDate: { type: Type.STRING, description: "Detected expiration date (YYYY-MM-DD or YYYY-MM) if readable, else empty string." },
+                    expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly read on the image." },
+                    batchNumber: { type: Type.STRING, description: "Batch / Lot number if readable." },
+                    unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                    pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
+                  },
+                  required: [
+                    "name", "countryOfOrigin", "activeIngredient", "purposeFr", "purposeUs", 
+                    "equivalentFr", "equivalentUs", "dosageInfoFr", "dosageInfoUs", 
+                    "requiresPrescriptionFr", "requiresPrescriptionUs", "precautionsFr", "precautionsUs", "category",
+                    "expirationDateFound"
+                  ]
+                }
+              },
+              required: ["detectedMedicine"]
+            }
+          }
+        });
+        console.log('DEBUG: /api/scan-medication Gemini API success');
+        
+        const resultText = response.text;
+        res.json(cleanAndParseJSON(resultText));
+    } catch (error: any) {
+        console.error("DEBUG: /api/scan-medication Gemini API Error:", error);
+        res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
+    }
   } catch (error: any) {
     console.error("Image Analysis Error:", error);
     res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
@@ -308,15 +301,19 @@ app.post('/api/prescription/translate', async (req, res) => {
     Données de l'ordonnance : ${prescriptionText ? `Texte saisi : "${prescriptionText}"` : "Une image d'ordonnance a été transmise."}`;
 
     const runtimeKey = getReqApiKey(req) || undefined;
-    const ai = getGeminiClient(runtimeKey);
+    console.log('DEBUG: /api/prescription/translate called. Key status:', runtimeKey ? `Present (length: ${runtimeKey.length})` : "Missing");
 
-    const apiKey = runtimeKey;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+    if (!runtimeKey || runtimeKey === "MY_GEMINI_API_KEY" || runtimeKey === "MISSING_KEY") {
+      console.error('DEBUG: /api/prescription/translate Auth error');
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
         details: "L'IA a besoin d'une clé API valide pour analyser les ordonnances." 
       });
     }
+
+    const ai = new GoogleGenAI({
+      apiKey: runtimeKey
+    });
 
     const contents: any[] = [];
     if (imageBase64) {
@@ -329,44 +326,50 @@ app.post('/api/prescription/translate', async (req, res) => {
     }
     contents.push({ text: prompt });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: contents,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            originalText: { type: Type.STRING, description: "Raw or extracted prescription text." },
-            translatedInstructions: { type: Type.STRING, description: "Overall French translation/explanation of the prescription steps." },
-            medicationsFound: {
-              type: Type.ARRAY,
-              description: "List of individual medicines detected in the prescription.",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  originalName: { type: Type.STRING, description: "Brand name or generic name written on prescription." },
-                  molecule: { type: Type.STRING, description: "Active substance molecule." },
-                  usEquivalent: { type: Type.STRING, description: "Direct equivalent in USA/France with description (including brand names and whether OTC/Rx)." },
-                  purpose: { type: Type.STRING, description: "What the medicine cures or targets." },
-                  dosage: { type: Type.STRING, description: "Translated dosage instructions adjusted for the patient profile." },
-                  isPrescriptionOnlyUS: { type: Type.BOOLEAN, description: "Is this prescription-only (Rx) in the US?" },
-                  isPrescriptionOnlyFR: { type: Type.BOOLEAN, description: "Is this prescription-only in France?" },
-                  unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
-                  pregnancyWarningFr: { type: Type.STRING, description: "Pregnancy warning in French." }
-                },
-                required: ["originalName", "molecule", "usEquivalent", "purpose", "dosage", "isPrescriptionOnlyUS", "isPrescriptionOnlyFR"]
-              }
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: contents,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              originalText: { type: Type.STRING, description: "Raw or extracted prescription text." },
+              translatedInstructions: { type: Type.STRING, description: "Overall French translation/explanation of the prescription steps." },
+              medicationsFound: {
+                type: Type.ARRAY,
+                description: "List of individual medicines detected in the prescription.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    originalName: { type: Type.STRING, description: "Brand name or generic name written on prescription." },
+                    molecule: { type: Type.STRING, description: "Active substance molecule." },
+                    usEquivalent: { type: Type.STRING, description: "Direct equivalent in USA/France with description (including brand names and whether OTC/Rx)." },
+                    purpose: { type: Type.STRING, description: "What the medicine cures or targets." },
+                    dosage: { type: Type.STRING, description: "Translated dosage instructions adjusted for the patient profile." },
+                    isPrescriptionOnlyUS: { type: Type.BOOLEAN, description: "Is this prescription-only (Rx) in the US?" },
+                    isPrescriptionOnlyFR: { type: Type.BOOLEAN, description: "Is this prescription-only in France?" },
+                    unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                    pregnancyWarningFr: { type: Type.STRING, description: "Pregnancy warning in French." }
+                  },
+                  required: ["originalName", "molecule", "usEquivalent", "purpose", "dosage", "isPrescriptionOnlyUS", "isPrescriptionOnlyFR"]
+                }
+              },
+              generalPrecautions: { type: Type.STRING, description: "Critical interactions, cautions, or general safety tips." }
             },
-            generalPrecautions: { type: Type.STRING, description: "Critical interactions, cautions, or general safety tips." }
-          },
-          required: ["originalText", "translatedInstructions", "medicationsFound", "generalPrecautions"]
+            required: ["originalText", "translatedInstructions", "medicationsFound", "generalPrecautions"]
+          }
         }
-      }
-    });
-
-    const resultText = response.text;
-    res.json(cleanAndParseJSON(resultText));
+      });
+      console.log('DEBUG: /api/prescription/translate Gemini API success');
+      
+      const resultText = response.text;
+      res.json(cleanAndParseJSON(resultText));
+    } catch (error: any) {
+      console.error("DEBUG: /api/prescription/translate Gemini API Error:", error);
+      res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
+    }
   } catch (error: any) {
     console.error("Prescription Translation Error:", error);
     res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
@@ -387,39 +390,49 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
     Renvoie la date au format YYYY-MM-DD ou YYYY-MM (ex: 2027-12-31 ou 2028-06). Si tu ne trouves pas la date, fixe expirationDateFound à false.`;
 
     const runtimeKey = getReqApiKey(req) || undefined;
-    const ai = getGeminiClient(runtimeKey);
+    console.log('DEBUG: /api/image/analyze-expiration called. Key status:', runtimeKey ? `Present (length: ${runtimeKey.length})` : "Missing");
 
-    const apiKey = runtimeKey;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+    if (!runtimeKey || runtimeKey === "MY_GEMINI_API_KEY" || runtimeKey === "MISSING_KEY") {
+      console.error('DEBUG: /api/image/analyze-expiration Auth error');
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
         details: "La lecture de date par IA nécessite une clé API valide." 
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: [
-        { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
-        { text: prompt }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            expirationDate: { type: Type.STRING, description: "Extracted expiration date YYYY-MM-DD or YYYY-MM" },
-            expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly detected" },
-            batchNumber: { type: Type.STRING, description: "Batch or Lot number if present" },
-            confidenceMessage: { type: Type.STRING, description: "Explanation in French of what was read on the image" }
-          },
-          required: ["expirationDate", "expirationDateFound", "confidenceMessage"]
-        }
-      }
+    const ai = new GoogleGenAI({
+      apiKey: runtimeKey
     });
 
-    const resultText = response.text;
-    res.json(cleanAndParseJSON(resultText));
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: [
+          { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
+          { text: prompt }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              expirationDate: { type: Type.STRING, description: "Extracted expiration date YYYY-MM-DD or YYYY-MM" },
+              expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly detected" },
+              batchNumber: { type: Type.STRING, description: "Batch or Lot number if present" },
+              confidenceMessage: { type: Type.STRING, description: "Explanation in French of what was read on the image" }
+            },
+            required: ["expirationDate", "expirationDateFound", "confidenceMessage"]
+          }
+        }
+      });
+      console.log('DEBUG: /api/image/analyze-expiration Gemini API success');
+      
+      const resultText = response.text;
+      res.json(cleanAndParseJSON(resultText));
+    } catch (error: any) {
+      console.error("DEBUG: /api/image/analyze-expiration Gemini API Error:", error);
+      res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });
+    }
   } catch (error: any) {
     console.error("Expiration Scan Error:", error);
     res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });
@@ -453,15 +466,20 @@ Règles de réponse :
 5. Rappelle de toujours consulter un médecin ou pharmacien en cas de symptôme grave ou doute.`;
 
     const runtimeKey = getReqApiKey(req) || undefined;
-    const ai = getGeminiClient(runtimeKey);
+    console.log('DEBUG: /api/chat called. Key status:', runtimeKey ? `Present (length: ${runtimeKey.length})` : "Missing");
 
-    const apiKey = runtimeKey;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
+    if (!runtimeKey || runtimeKey === "MY_GEMINI_API_KEY" || runtimeKey === "MISSING_KEY") {
+      console.error('DEBUG: /api/chat Auth error');
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
         details: "L'assistant IA interactif nécessite une clé API configurée dans AI Studio." 
       });
     }
+
+    const ai = new GoogleGenAI({
+      apiKey: runtimeKey
+    });
+    console.log('DEBUG: GoogleGenAI client initialized (Chat) with key length:', runtimeKey.length);
 
     const promptText = `${systemPrompt}\n\nHistorique de la conversation :\n` + 
       messages.map((m: any) => `${m.role === 'user' ? 'Utilisateur' : 'Assistant'}: ${m.text}`).join('\n') +
