@@ -37,7 +37,9 @@ function getGeminiClient(runtimeKey?: string): GoogleGenAI {
 }
 
 const getReqApiKey = (req: express.Request): string | null => {
+    console.log('DEBUG: Headers received:', req.headers);
     const key = req.header('X-Gemini-API-Key') || process.env.GEMINI_API_KEY || null;
+    console.log('DEBUG: Key from header or env:', key ? '***' : 'null');
     if (key && key.trim() !== '' && key !== 'null' && key !== 'undefined') {
         return key.trim();
     }
@@ -45,7 +47,9 @@ const getReqApiKey = (req: express.Request): string | null => {
 };
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Gemini-API-Key']
+}));
 const PORT = 3000;
 
 // Increase payload limits for base64 photo transfer
