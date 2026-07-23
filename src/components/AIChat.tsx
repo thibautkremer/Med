@@ -43,14 +43,16 @@ export default function AIChat({ activeProfile }: AIChatProps) {
         })
       });
 
-      const contentType = response.headers.get('content-type') || '';
       let data: any = null;
-      if (contentType.includes('application/json')) {
+      try {
         data = await response.json();
+      } catch (parseErr) {
+        console.error("Failed to parse JSON response from /api/chat");
       }
 
-      if (!response.ok || !data) {
-        throw new Error(data?.error || data?.details || `Erreur de communication avec l'assistant (${response.status}).`);
+      if (!response.ok || !data || !data.reply) {
+        const errorText = data?.error || data?.details || (data && !data.reply ? "Réponse vide reçue de l'assistant IA." : null) || `Erreur de communication avec l'assistant (${response.status}).`;
+        throw new Error(errorText);
       }
 
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);

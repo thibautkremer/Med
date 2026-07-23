@@ -54,14 +54,36 @@ function cleanAndParseJSON(text: string | null | undefined): any {
     throw new Error("Réponse de l'IA vide.");
   }
   let cleaned = text.trim();
-  if (cleaned.startsWith("```")) {
+  
+  // Extract content from markdown code blocks if present
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    cleaned = codeBlockMatch[1].trim();
+  } else {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   }
-  return JSON.parse(cleaned);
+  
+  try {
+    return JSON.parse(cleaned);
+  } catch (firstErr: any) {
+    // Fallback: locate first '{' or '[' and last '}' or ']'
+    const firstBrace = cleaned.search(/[\{\[]/);
+    const lastBrace = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      const extracted = cleaned.substring(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(extracted);
+      } catch (secondErr) {
+        throw new Error(`Erreur de lecture du format JSON : ${firstErr.message}`);
+      }
+    }
+    throw new Error(`Erreur de lecture du format JSON : ${firstErr.message}`);
+  }
 }
 
 // API endpoint for symptom checker
 app.post('/api/symptoms/analyze', async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   try {
     const { symptoms, profile } = req.body;
     
@@ -89,7 +111,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     
     // Check if key is present and not the placeholder
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante ou non configurée.", 
         details: "Veuillez configurer votre clé API Gemini dans les paramètres Secrets de l'AI Studio pour activer l'analyse IA réelle." 
@@ -133,10 +155,10 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     });
 
     const resultText = response.text;
-    res.json(cleanAndParseJSON(resultText));
+    return res.json(cleanAndParseJSON(resultText));
   } catch (error: any) {
     console.error("Symptom Analysis Error:", error);
-    res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });
+    return res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });
   }
 });
 
@@ -369,6 +391,7 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
 
 // API endpoint for interactive AI Chat Assistant
 app.post('/api/chat', async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   try {
     const { messages, profile } = req.body;
 
@@ -411,10 +434,11 @@ Règles de réponse :
       contents: promptText,
     });
 
-    res.json({ reply: response.text });
+    const reply = response.text || "Désolé, je n'ai pas pu générer de réponse. Veuillez reformuler votre question.";
+    return res.json({ reply });
   } catch (error: any) {
     console.error("AI Chat Error:", error);
-    res.status(500).json({ error: "Erreur de réponse de l'assistant IA: " + error.message });
+    return res.status(500).json({ error: "Erreur de réponse de l'assistant IA: " + (error.message || "Erreur inconnue") });
   }
 });
 

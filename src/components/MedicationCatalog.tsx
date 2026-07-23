@@ -136,145 +136,213 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
     <div className="space-y-6">
       {/* Search Header */}
       <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <Pill className="w-5 h-5 text-emerald-500" />
-          Équivalences & Recherche de Médicaments
-        </h2>
-        
-        {/* Search Bar & Export */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom ou molécule..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-800 text-sm border border-slate-200 focus:border-emerald-500 rounded-xl pl-11 pr-4 py-3.5 transition-all outline-none"
-            />
+        {/* Title & PDF Export */}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <Pill className="w-5 h-5 text-emerald-500" />
+            Équivalences & Recherche de Médicaments
+          </h2>
+          <div className="flex items-center gap-2">
+            {activeProfile && (
+              <span className="hidden sm:inline-flex text-xs text-emerald-700 font-medium bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg">
+                Profil : {activeProfile.name} ({activeProfile.age} ans)
+              </span>
+            )}
+            <button
+              onClick={() => generateMedicationPDF(filteredMeds)}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+              title="Exporter la liste filtrée en PDF"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
           </div>
-          <button
-            onClick={() => generateMedicationPDF(filteredMeds)}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
-            title="Exporter la liste en PDF"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
         </div>
-
-        {/* Direction Selector */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-slate-400 font-medium">Affichage :</span>
-          <button
-            onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              filterMode === 'all' 
-                ? 'bg-slate-800 text-white' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            Tous les médicaments
-          </button>
-          <button
-            onClick={() => setFilterMode('fr_to_us')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-              filterMode === 'fr_to_us' 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            🇫🇷 France <ArrowRight className="w-3 h-3" /> 🇺🇸 USA
-          </button>
-          <button
-            onClick={() => setFilterMode('us_to_fr')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-              filterMode === 'us_to_fr' 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            🇺🇸 USA <ArrowRight className="w-3 h-3" /> 🇫🇷 France
-          </button>
-        </div>
-
-        {/* Target Profile Filter (Adult vs Child/Infant) & Pregnancy Filter */}
-        <div className="flex flex-wrap items-center gap-2 text-xs pt-3 border-t border-slate-100">
-          <span className="text-slate-400 font-medium">Profil :</span>
-          <button
-            onClick={() => setTargetFilter('all')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              targetFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            👥 Tous âges
-          </button>
-          <button
-            onClick={() => setTargetFilter('adult')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              targetFilter === 'adult' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            🧑 Adulte
-          </button>
-          <button
-            onClick={() => setTargetFilter('infant')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              targetFilter === 'infant' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            👶 Enfant / Bébé
-          </button>
-
-          <span className="text-slate-300 mx-1">|</span>
-          <span className="text-slate-400 font-medium">🤰 Grossesse :</span>
-          <button
-            onClick={() => setPregnancyFilter('all')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              pregnancyFilter === 'all' ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            Tous
-          </button>
-          <button
-            onClick={() => setPregnancyFilter('safe')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              pregnancyFilter === 'safe' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            }`}
-          >
-            ✓ Autorisé
-          </button>
-          <button
-            onClick={() => setPregnancyFilter('discouraged')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-              pregnancyFilter === 'discouraged' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-            }`}
-          >
-            ⚠️ Déconseillé
-          </button>
-
-          {activeProfile && (
-            <span className="text-xs text-emerald-600 font-medium ml-auto bg-emerald-50 px-2.5 py-1 rounded-lg">
-              Profil actif : {activeProfile.name} ({activeProfile.age} ans)
-            </span>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom (ex: Doliprane, Advil, Tylenol), molécule (ex: Paracétamol) ou usage..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-800 text-sm border border-slate-200 focus:border-emerald-500 rounded-xl pl-11 pr-10 py-3 transition-all outline-none"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs font-bold px-1"
+            >
+              ✕
+            </button>
           )}
         </div>
 
+        {/* Filter Topic Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+          {/* Topic 1: Direction / Country */}
+          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span>🌐</span> Direction
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">Pays d'origine</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+              <button
+                onClick={() => setFilterMode('all')}
+                className={`py-1.5 px-2 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                  filterMode === 'all'
+                    ? 'bg-slate-800 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Tous
+              </button>
+              <button
+                onClick={() => setFilterMode('fr_to_us')}
+                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  filterMode === 'fr_to_us'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🇫🇷 ➔ 🇺🇸
+              </button>
+              <button
+                onClick={() => setFilterMode('us_to_fr')}
+                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  filterMode === 'us_to_fr'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🇺🇸 ➔ 🇫🇷
+              </button>
+            </div>
+          </div>
+
+          {/* Topic 2: Target Age Group */}
+          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span>👥</span> Public Cible
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">Tranche d'âge</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+              <button
+                onClick={() => setTargetFilter('all')}
+                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                  targetFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Tous
+              </button>
+              <button
+                onClick={() => setTargetFilter('adult')}
+                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                  targetFilter === 'adult'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🧑 Adulte
+              </button>
+              <button
+                onClick={() => setTargetFilter('infant')}
+                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                  targetFilter === 'infant'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                👶 Bébé
+              </button>
+            </div>
+          </div>
+
+          {/* Topic 3: Pregnancy Safety */}
+          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span>🤰</span> Grossesse
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">Maternité</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+              <button
+                onClick={() => setPregnancyFilter('all')}
+                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                  pregnancyFilter === 'all'
+                    ? 'bg-teal-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Tous
+              </button>
+              <button
+                onClick={() => setPregnancyFilter('safe')}
+                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
+                  pregnancyFilter === 'safe'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-emerald-700 hover:bg-emerald-50'
+                }`}
+              >
+                ✓ Autorisé
+              </button>
+              <button
+                onClick={() => setPregnancyFilter('discouraged')}
+                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
+                  pregnancyFilter === 'discouraged'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'text-rose-700 hover:bg-rose-50'
+                }`}
+              >
+                ⚠️ Risque
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Categories Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {CATEGORIES.map((cat) => (
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 shrink-0">Pathologie :</span>
+          <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-none flex-1">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+                  selectedCategory === cat.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {(searchQuery || selectedCategory !== 'all' || filterMode !== 'all' || targetFilter !== 'all' || pregnancyFilter !== 'all') && (
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer ${
-                selectedCategory === cat.id
-                  ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500'
-                  : 'bg-slate-50 text-slate-600 border border-slate-100 hover:border-slate-300'
-              }`}
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                setFilterMode('all');
+                setTargetFilter('all');
+                setPregnancyFilter('all');
+              }}
+              className="shrink-0 text-xs text-rose-600 hover:text-rose-700 font-bold bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Réinitialiser tous les filtres"
             >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
+              Reset ↺
             </button>
-          ))}
+          )}
         </div>
       </div>
 

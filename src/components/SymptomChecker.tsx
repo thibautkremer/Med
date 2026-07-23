@@ -37,18 +37,19 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
         }),
       });
 
-      const contentType = response.headers.get('content-type') || '';
       let data: any = null;
-      if (contentType.includes('application/json')) {
+      try {
         data = await response.json();
+      } catch (parseErr) {
+        console.error("Failed to parse JSON response from /api/symptoms/analyze");
       }
 
       if (!response.ok) {
         throw new Error(data?.error || data?.details || `Erreur de communication avec le serveur de santé (${response.status}).`);
       }
 
-      if (!data) {
-        throw new Error("Réponse invalide reçue du serveur.");
+      if (!data || !data.analysis) {
+        throw new Error(data?.error || "Format de réponse invalide reçu du serveur de santé.");
       }
 
       setResult(data);
