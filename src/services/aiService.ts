@@ -1,8 +1,10 @@
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 export const aiService = {
   async analyzeSymptoms(symptoms: string, profile: UserProfile | null): Promise<SymptomAnalysisResponse> {
-    const response = await fetch('/api/symptoms/analyze', {
+    const response = await fetch(`${API_BASE_URL}/api/symptoms/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ symptoms, profile })
@@ -21,7 +23,7 @@ export const aiService = {
   },
 
   async chatWithPharmacist(messages: {role: string, text: string}[], profile: UserProfile | null): Promise<string> {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, profile })
@@ -41,7 +43,7 @@ export const aiService = {
   },
 
   async analyzeMedicineImage(imageBase64: string, profile: UserProfile | null): Promise<any> {
-    const response = await fetch('/api/image/analyze', {
+    const response = await fetch(`${API_BASE_URL}/api/image/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64, profile })
@@ -60,7 +62,7 @@ export const aiService = {
   },
 
   async translatePrescription(prescriptionText: string, imageBase64: string | null, profile: UserProfile | null): Promise<any> {
-    const response = await fetch('/api/prescription/translate', {
+    const response = await fetch(`${API_BASE_URL}/api/prescription/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prescriptionText, imageBase64, profile })
@@ -79,7 +81,7 @@ export const aiService = {
   },
 
   async analyzeExpiration(imageBase64: string): Promise<any> {
-    const response = await fetch('/api/image/analyze-expiration', {
+    const response = await fetch(`${API_BASE_URL}/api/image/analyze-expiration`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64 })
