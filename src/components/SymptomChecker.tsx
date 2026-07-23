@@ -48,11 +48,15 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
         throw new Error(data?.error || data?.details || `Erreur de communication avec le serveur de santé (${response.status}).`);
       }
 
-      if (!data || !data.analysis) {
+      const analysisText = data?.analysis || data?.diagnostic || data?.summary || (typeof data === 'string' ? data : null);
+      if (!data || !analysisText) {
         throw new Error(data?.error || "Format de réponse invalide reçu du serveur de santé.");
       }
 
-      setResult(data);
+      setResult({
+        ...data,
+        analysis: analysisText
+      });
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Désolé, impossible d'analyser vos symptômes pour le moment. Veuillez réessayer.");

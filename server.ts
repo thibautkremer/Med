@@ -155,7 +155,13 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     });
 
     const resultText = response.text;
-    return res.json(cleanAndParseJSON(resultText));
+    const parsed = cleanAndParseJSON(resultText);
+    const normalized = {
+      analysis: parsed?.analysis || parsed?.diagnostic || parsed?.summary || parsed?.advice || (typeof parsed === 'string' ? parsed : "Analyse médicale complétée."),
+      severity: parsed?.severity || 'low',
+      suggestedMedications: Array.isArray(parsed?.suggestedMedications) ? parsed.suggestedMedications : (Array.isArray(parsed?.medications) ? parsed.medications : [])
+    };
+    return res.json(normalized);
   } catch (error: any) {
     console.error("Symptom Analysis Error:", error);
     return res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });

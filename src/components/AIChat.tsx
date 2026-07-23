@@ -50,12 +50,17 @@ export default function AIChat({ activeProfile }: AIChatProps) {
         console.error("Failed to parse JSON response from /api/chat");
       }
 
-      if (!response.ok || !data || !data.reply) {
-        const errorText = data?.error || data?.details || (data && !data.reply ? "Réponse vide reçue de l'assistant IA." : null) || `Erreur de communication avec l'assistant (${response.status}).`;
+      if (!response.ok) {
+        const errorText = data?.error || data?.details || `Erreur de communication avec l'assistant (${response.status}).`;
         throw new Error(errorText);
       }
 
-      setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+      const replyText = data?.reply || data?.text || data?.response || data?.message || (typeof data === 'string' ? data : null);
+      if (!replyText) {
+        throw new Error(data?.error || "Réponse vide reçue de l'assistant IA.");
+      }
+
+      setMessages(prev => [...prev, { role: 'bot', text: replyText }]);
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'bot', text: e.message || "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA." }]);
     } finally {

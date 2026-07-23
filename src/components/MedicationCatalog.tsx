@@ -4,7 +4,8 @@ import { MEDICATIONS_DATABASE } from '../data/medications';
 import { generateMedicationPDF } from '../utils/pdfGenerator';
 import { 
   Search, Info, Heart, ArrowLeftRight, ExternalLink, AlertTriangle, 
-  CheckCircle, HelpCircle, Pill, ShieldAlert, ShoppingBag, ArrowRight, FileText
+  CheckCircle, HelpCircle, Pill, ShieldAlert, ShoppingBag, ArrowRight, FileText,
+  Filter, ChevronDown, ChevronUp, Activity
 } from 'lucide-react';
 
 
@@ -31,6 +32,12 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
   const [pregnancyFilter, setPregnancyFilter] = useState<'all' | 'safe' | 'discouraged'>('all');
   const [filterMode, setFilterMode] = useState<'all' | 'fr_to_us' | 'us_to_fr'>('all');
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+
+  const activeFilterCount = (filterMode !== 'all' ? 1 : 0) + 
+    (targetFilter !== 'all' ? 1 : 0) + 
+    (pregnancyFilter !== 'all' ? 1 : 0) + 
+    (selectedCategory !== 'all' ? 1 : 0);
 
   // Filter items
   const filteredMeds = MEDICATIONS_DATABASE.filter(med => {
@@ -179,171 +186,205 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
           )}
         </div>
 
-        {/* Filter Topic Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-          {/* Topic 1: Direction / Country */}
-          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <span>🌐</span> Direction
+        {/* Toggle Filters Header */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+          >
+            <Filter className="w-4 h-4 text-emerald-600" />
+            <span>Filtres</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full ml-0.5">
+                {activeFilterCount}
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">Pays d'origine</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
-              <button
-                onClick={() => setFilterMode('all')}
-                className={`py-1.5 px-2 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
-                  filterMode === 'all'
-                    ? 'bg-slate-800 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Tous
-              </button>
-              <button
-                onClick={() => setFilterMode('fr_to_us')}
-                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  filterMode === 'fr_to_us'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                🇫🇷 ➔ 🇺🇸
-              </button>
-              <button
-                onClick={() => setFilterMode('us_to_fr')}
-                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  filterMode === 'us_to_fr'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                🇺🇸 ➔ 🇫🇷
-              </button>
-            </div>
-          </div>
+            )}
+            {showFilters ? (
+              <ChevronUp className="w-4 h-4 text-slate-500 ml-1" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-500 ml-1" />
+            )}
+          </button>
 
-          {/* Topic 2: Target Age Group */}
-          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <span>👥</span> Public Cible
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">Tranche d'âge</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
-              <button
-                onClick={() => setTargetFilter('all')}
-                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
-                  targetFilter === 'all'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Tous
-              </button>
-              <button
-                onClick={() => setTargetFilter('adult')}
-                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
-                  targetFilter === 'adult'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                🧑 Adulte
-              </button>
-              <button
-                onClick={() => setTargetFilter('infant')}
-                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
-                  targetFilter === 'infant'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                👶 Bébé
-              </button>
-            </div>
-          </div>
-
-          {/* Topic 3: Pregnancy Safety */}
-          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <span>🤰</span> Grossesse
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">Maternité</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
-              <button
-                onClick={() => setPregnancyFilter('all')}
-                className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
-                  pregnancyFilter === 'all'
-                    ? 'bg-teal-700 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Tous
-              </button>
-              <button
-                onClick={() => setPregnancyFilter('safe')}
-                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
-                  pregnancyFilter === 'safe'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-emerald-700 hover:bg-emerald-50'
-                }`}
-              >
-                ✓ Autorisé
-              </button>
-              <button
-                onClick={() => setPregnancyFilter('discouraged')}
-                className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
-                  pregnancyFilter === 'discouraged'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-rose-700 hover:bg-rose-50'
-                }`}
-              >
-                ⚠️ Risque
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Categories Pills */}
-        <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-400 shrink-0">Pathologie :</span>
-          <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-none flex-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-                  selectedCategory === cat.id
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {(searchQuery || selectedCategory !== 'all' || filterMode !== 'all' || targetFilter !== 'all' || pregnancyFilter !== 'all') && (
+          {activeFilterCount > 0 && (
             <button
               onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
                 setFilterMode('all');
                 setTargetFilter('all');
                 setPregnancyFilter('all');
+                setSelectedCategory('all');
               }}
-              className="shrink-0 text-xs text-rose-600 hover:text-rose-700 font-bold bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-              title="Réinitialiser tous les filtres"
+              className="text-xs text-rose-600 hover:text-rose-700 font-bold bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
-              Reset ↺
+              Réinitialiser les filtres ↺
             </button>
           )}
         </div>
+
+        {/* Expandable Filter Panel (Direction, Public Cible, Grossesse, Pathologie) */}
+        {showFilters && (
+          <div className="space-y-4 pt-3 border-t border-slate-100">
+            {/* Filter Topic Cards (Direction, Public Cible, Grossesse) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Topic 1: Direction / Country */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span>🌐</span> Direction
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Pays d'origine</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+                  <button
+                    onClick={() => setFilterMode('all')}
+                    className={`py-1.5 px-2 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                      filterMode === 'all'
+                        ? 'bg-slate-800 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={() => setFilterMode('fr_to_us')}
+                    className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      filterMode === 'fr_to_us'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    🇫🇷 ➔ 🇺🇸
+                  </button>
+                  <button
+                    onClick={() => setFilterMode('us_to_fr')}
+                    className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      filterMode === 'us_to_fr'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    🇺🇸 ➔ 🇫🇷
+                  </button>
+                </div>
+              </div>
+
+              {/* Topic 2: Target Age Group */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span>👥</span> Public Cible
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Tranche d'âge</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+                  <button
+                    onClick={() => setTargetFilter('all')}
+                    className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                      targetFilter === 'all'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={() => setTargetFilter('adult')}
+                    className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                      targetFilter === 'adult'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    🧑 Adulte
+                  </button>
+                  <button
+                    onClick={() => setTargetFilter('infant')}
+                    className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                      targetFilter === 'infant'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    👶 Bébé
+                  </button>
+                </div>
+              </div>
+
+              {/* Topic 3: Pregnancy Safety */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span>🤰</span> Grossesse
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Maternité</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200/60">
+                  <button
+                    onClick={() => setPregnancyFilter('all')}
+                    className={`py-1.5 px-1 rounded-md text-xs font-semibold text-center transition-all cursor-pointer ${
+                      pregnancyFilter === 'all'
+                        ? 'bg-teal-700 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={() => setPregnancyFilter('safe')}
+                    className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
+                      pregnancyFilter === 'safe'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    ✓ Autorisé
+                  </button>
+                  <button
+                    onClick={() => setPregnancyFilter('discouraged')}
+                    className={`py-1.5 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer ${
+                      pregnancyFilter === 'discouraged'
+                        ? 'bg-rose-600 text-white shadow-sm'
+                        : 'text-rose-700 hover:bg-rose-50'
+                    }`}
+                  >
+                    ⚠️ Risque
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Pathologies / Categories Grid */}
+            <div className="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span className="flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-emerald-600" />
+                  Pathologies & Symptômes
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">Catégories médicales</span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-base leading-none">{cat.icon}</span>
+                      <span className="truncate">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Catalog Grid */}
