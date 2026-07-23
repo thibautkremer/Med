@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CabinetItem, TreatmentLog, UserProfile } from '../types';
 import { MEDICATIONS_DATABASE } from '../data/medications';
+import { errorService } from '../services/errorService';
 import { 
   Plus, Trash2, Edit, AlertCircle, CheckCircle, Package, 
   Clock, Calendar, CheckSquare, PlusCircle, Sparkles, HeartPulse, 
@@ -117,6 +118,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     e.preventDefault();
     if (!cabinetMedName) return;
 
+    errorService.action(`Armoire à pharmacie - Ajout de médicament: ${cabinetMedName}`);
     const newItem: CabinetItem = {
       id: `cab-${Date.now()}`,
       medicationName: cabinetMedName,
@@ -131,6 +133,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
 
     const updated = [newItem, ...cabinet];
     saveCabinet(updated);
+    errorService.success(`Médicament "${cabinetMedName}" ajouté avec succès (stock: ${cabinetStock})`);
     triggerSuccess(`"${cabinetMedName}" a bien été ajouté à votre armoire à pharmacie.`);
 
     // Reset fields
@@ -146,6 +149,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
   const handleQuickLookup = (medId: string) => {
     const med = MEDICATIONS_DATABASE.find(m => m.id === medId);
     if (med) {
+      errorService.action(`Armoire à pharmacie - Remplissage rapide depuis le catalogue: ${med.nameFr || med.nameUs}`);
       setCabinetMedName(cabinetCountry === 'FR' ? med.nameFr : med.nameUs);
       setCabinetActiveIngredient(cabinetCountry === 'FR' ? med.activeIngredientFr : med.activeIngredientUs);
     }
@@ -153,8 +157,10 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
 
   const handleDeleteCabinetItem = (id: string, name: string) => {
     if (confirm(`Voulez-vous retirer "${name}" de votre armoire à pharmacie ?`)) {
+      errorService.action(`Armoire à pharmacie - Suppression de médicament: ${name}`);
       const updated = cabinet.filter(item => item.id !== id);
       saveCabinet(updated);
+      errorService.success(`Médicament "${name}" supprimé avec succès`);
       triggerSuccess(`"${name}" a été supprimé.`);
     }
   };
@@ -164,6 +170,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     const updated = cabinet.map(item => {
       if (item.id === id) {
         const newStock = Math.max(0, item.stockQuantity + delta);
+        errorService.action(`Armoire à pharmacie - Mise à jour du stock de "${item.medicationName}": ${item.stockQuantity} -> ${newStock}`);
         return {
           ...item,
           stockQuantity: newStock,
@@ -180,6 +187,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     e.preventDefault();
     if (!treatmentMedName || !activeProfile) return;
 
+    errorService.action(`Suivi - Ajout de traitement: "${treatmentMedName}" pour ${activeProfile.name}`);
     const newItem: TreatmentLog = {
       id: `treat-${Date.now()}`,
       profileId: activeProfile.id,
@@ -194,6 +202,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
 
     const updated = [newItem, ...treatments];
     saveTreatments(updated);
+    errorService.success(`Traitement "${treatmentMedName}" créé pour ${activeProfile.name}`);
     triggerSuccess(`Nouveau traitement ajouté pour ${activeProfile.name}.`);
 
     // Reset
@@ -205,8 +214,13 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
   };
 
   const handleDeleteTreatment = (id: string) => {
+    const treatment = treatments.find(t => t.id === id);
+    if (treatment) {
+      errorService.action(`Suivi - Suppression de traitement: "${treatment.medicationName}"`);
+    }
     const updated = treatments.filter(t => t.id !== id);
     saveTreatments(updated);
+    errorService.success("Traitement retiré du journal.");
     triggerSuccess("Traitement retiré du journal.");
   };
 
@@ -220,6 +234,8 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     const treatment = treatments.find(t => t.id === treatmentId);
     if (!treatment) return;
 
+    errorService.action(`Suivi - Prise de dose pour: "${treatment.medicationName}" (${timeOfDayLabel})`);
+
     // Check if dose has already been taken for this specific slot today to avoid double counts
     const alreadyTaken = treatment.takenHistory.some(history => {
       const isSameDay = history.timestamp.startsWith(todayStr);
@@ -227,6 +243,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     });
 
     if (alreadyTaken) {
+      errorService.log(`La dose de (${timeOfDayLabel}) de "${treatment.medicationName}" a déjà été prise aujourd'hui`, 'error');
       alert(`Dose de (${timeOfDayLabel}) déjà enregistrée pour aujourd'hui !`);
       return;
     }
@@ -241,6 +258,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     if (cabinetMatch) {
       if (cabinetMatch.stockQuantity <= 0) {
         if (!confirm(`Attention ! "${cabinetMatch.medicationName}" est marqué en rupture de stock (0 restants) dans votre armoire. Voulez-vous quand même enregistrer la prise ?`)) {
+          errorService.info(`Prise de dose annulée par l'utilisateur car rupture de stock`);
           return;
         }
       } else {
@@ -272,6 +290,7 @@ export default function MedicineCabinet({ activeProfile, profiles }: MedicineCab
     if (stockFound && cabinetMatch) {
       alertMsg += ` Le stock de "${cabinetMatch.medicationName}" a été décrémenté (Reste : ${cabinetMatch.stockQuantity - 1}).`;
     }
+    errorService.success(`Prise enregistrée pour "${treatment.medicationName}" (${timeOfDayLabel})`);
     triggerSuccess(alertMsg);
   };
 

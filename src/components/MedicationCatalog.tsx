@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Medication, UserProfile } from '../types';
 import { MEDICATIONS_DATABASE } from '../data/medications';
 import { generateMedicationPDF } from '../utils/pdfGenerator';
+import { errorService } from '../services/errorService';
 import { 
   Search, Info, Heart, ArrowLeftRight, ExternalLink, AlertTriangle, 
   CheckCircle, HelpCircle, Pill, ShieldAlert, ShoppingBag, ArrowRight, FileText,
@@ -156,7 +157,11 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
               </span>
             )}
             <button
-              onClick={() => generateMedicationPDF(filteredMeds)}
+              onClick={() => {
+                errorService.action(`Catalogue - Génération du PDF des médicaments (${filteredMeds.length} articles)`);
+                generateMedicationPDF(filteredMeds);
+                errorService.success("PDF généré et téléchargé avec succès");
+              }}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm"
               title="Exporter la liste filtrée en PDF"
             >
@@ -677,7 +682,10 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
                 return (
                   <div
                     key={med.id}
-                    onClick={() => setSelectedMed(med)}
+                    onClick={() => {
+                      errorService.action(`Catalogue - Sélection du médicament: "${med.nameFr} / ${med.nameUs}"`);
+                      setSelectedMed(med);
+                    }}
                     className="bg-white rounded-xl border border-slate-100 p-5 hover:border-emerald-200 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between group relative"
                   >
                     {/* Top line with category icon, target badge & favorite button */}
@@ -716,6 +724,7 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          errorService.action((isFavorite ? "Favoris - Retrait de " : "Favoris - Ajout de ") + `"${med.nameFr} / ${med.nameUs}"`);
                           toggleFavorite(med.id);
                         }}
                         className="p-1.5 text-slate-400 hover:text-rose-500 rounded-full hover:bg-rose-50 transition-colors cursor-pointer shrink-0"

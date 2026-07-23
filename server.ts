@@ -78,6 +78,36 @@ function cleanAndParseJSON(text: string | null | undefined): any {
   }
 }
 
+// Helper function to handle and beautify Gemini API errors (including restricted/blocked keys)
+function handleGeminiError(error: any, res: express.Response, endpoint: string) {
+  console.error(`Gemini Error on ${endpoint}:`, error);
+  const errMsg = error.message || "";
+  const errStr = typeof error === 'string' ? error : JSON.stringify(error);
+  
+  if (
+    errMsg.includes("API_KEY_SERVICE_BLOCKED") || 
+    errStr.includes("API_KEY_SERVICE_BLOCKED") ||
+    errMsg.includes("UNAUTHENTICATED") || 
+    errStr.includes("UNAUTHENTICATED") ||
+    errMsg.includes("401") ||
+    errStr.includes("401") ||
+    errMsg.includes("ACCESS_TOKEN_TYPE_UNSUPPORTED") ||
+    errStr.includes("ACCESS_TOKEN_TYPE_UNSUPPORTED") ||
+    errMsg.includes("PERMISSION_DENIED") ||
+    errStr.includes("PERMISSION_DENIED")
+  ) {
+    return res.status(401).json({
+      error: "Clé API Gemini invalide, restreinte ou bloquée.",
+      details: "La clé API Gemini configurée est restreinte ou bloquée par la plateforme de sécurité Google (API_KEY_SERVICE_BLOCKED ou non autorisée). " +
+               "Veuillez configurer une clé API Gemini valide à l'aide de l'outil de gestion d'AI Studio, ou l'ajouter localement comme clé de remplacement."
+    });
+  }
+  
+  return res.status(500).json({
+    error: `Erreur lors de la communication avec l'assistant IA: ${error.message || "Erreur inconnue"}`
+  });
+}
+
 // API endpoint for symptom checker
 app.post('/api/symptoms/analyze', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -175,8 +205,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     };
     return res.json(normalized);
   } catch (error: any) {
-    console.error("Symptom Analysis Error:", error);
-    return res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });
+    return handleGeminiError(error, res, "/api/symptoms/analyze");
   }
 });
 
@@ -275,12 +304,10 @@ app.post('/api/image/analyze', async (req, res) => {
         const resultText = response.text;
         res.json(cleanAndParseJSON(resultText));
     } catch (error: any) {
-        console.error("DEBUG: /api/scan-medication Gemini API Error:", error);
-        res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
+        return handleGeminiError(error, res, "/api/image/analyze");
     }
   } catch (error: any) {
-    console.error("Image Analysis Error:", error);
-    res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
+    return handleGeminiError(error, res, "/api/image/analyze (outer)");
   }
 });
 
@@ -368,12 +395,10 @@ app.post('/api/prescription/translate', async (req, res) => {
       const resultText = response.text;
       res.json(cleanAndParseJSON(resultText));
     } catch (error: any) {
-      console.error("DEBUG: /api/prescription/translate Gemini API Error:", error);
-      res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
+      return handleGeminiError(error, res, "/api/prescription/translate");
     }
   } catch (error: any) {
-    console.error("Prescription Translation Error:", error);
-    res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
+    return handleGeminiError(error, res, "/api/prescription/translate (outer)");
   }
 });
 
@@ -431,12 +456,10 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
       const resultText = response.text;
       res.json(cleanAndParseJSON(resultText));
     } catch (error: any) {
-      console.error("DEBUG: /api/image/analyze-expiration Gemini API Error:", error);
-      res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });
+      return handleGeminiError(error, res, "/api/image/analyze-expiration");
     }
   } catch (error: any) {
-    console.error("Expiration Scan Error:", error);
-    res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });
+    return handleGeminiError(error, res, "/api/image/analyze-expiration (outer)");
   }
 });
 
@@ -495,8 +518,7 @@ Règles de réponse :
     const reply = (typeof text === 'string' && text.trim() !== '') ? text : "Désolé, je n'ai pas pu générer de réponse. Veuillez reformuler votre question.";
     return res.json({ reply });
   } catch (error: any) {
-    console.error("AI Chat Error:", error);
-    return res.status(500).json({ error: "Erreur de réponse de l'assistant IA: " + (error.message || "Erreur inconnue") });
+    return handleGeminiError(error, res, "/api/chat");
   }
 });
 
