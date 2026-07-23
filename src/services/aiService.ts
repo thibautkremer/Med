@@ -1,6 +1,17 @@
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  // If running in Capacitor app or outside Cloud Run, fallback to Cloud Run backend URL
+  if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'file:' || !window.location.origin.includes('run.app'))) {
+    return 'https://ais-dev-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app';
+  }
+  return '';
+};
+
+const API_BASE = getApiBase();
 
 export const aiService = {
   async analyzeSymptoms(symptoms: string, profile: UserProfile | null): Promise<SymptomAnalysisResponse> {
