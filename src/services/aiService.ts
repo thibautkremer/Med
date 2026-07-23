@@ -1,11 +1,12 @@
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 import { errorService } from './errorService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ais-pre-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const getHeaders = () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const runtimeKey = localStorage.getItem('RUNTIME_GEMINI_API_KEY');
+    console.log('DEBUG: Runtime API key from localStorage:', runtimeKey ? '***' : 'null');
     if (runtimeKey && runtimeKey.trim() !== '' && runtimeKey !== 'null' && runtimeKey !== 'undefined') {
         headers['X-Gemini-API-Key'] = runtimeKey.trim();
     }
