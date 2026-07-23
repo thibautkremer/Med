@@ -6,8 +6,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ais-pre-xm3x2
 const getHeaders = () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const runtimeKey = localStorage.getItem('RUNTIME_GEMINI_API_KEY');
-    if (runtimeKey) {
-        headers['X-Gemini-API-Key'] = runtimeKey;
+    if (runtimeKey && runtimeKey.trim() !== '' && runtimeKey !== 'null' && runtimeKey !== 'undefined') {
+        headers['X-Gemini-API-Key'] = runtimeKey.trim();
     }
     return headers;
 };

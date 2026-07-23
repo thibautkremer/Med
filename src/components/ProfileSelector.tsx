@@ -34,11 +34,18 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [errors, setErrors] = useState(errorService.getErrors());
+  const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || '');
 
   useEffect(() => {
     const interval = setInterval(() => setErrors(errorService.getErrors()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setApiKey(value);
+    localStorage.setItem('RUNTIME_GEMINI_API_KEY', value);
+  };
   
   // New profile form state
   const [name, setName] = useState('');
@@ -310,8 +317,8 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                 type="password"
                 placeholder="Entrez votre clé API manuellement"
                 className="w-full text-xs p-2 rounded bg-slate-800 border border-slate-700 text-white"
-                onChange={(e) => localStorage.setItem('RUNTIME_GEMINI_API_KEY', e.target.value)}
-                defaultValue={localStorage.getItem('RUNTIME_GEMINI_API_KEY') || ''}
+                onChange={handleApiKeyChange}
+                value={apiKey}
             />
             <p className="text-[10px] text-slate-500 mt-1">
                 <strong>Attention :</strong> Cette clé est stockée localement dans votre navigateur.

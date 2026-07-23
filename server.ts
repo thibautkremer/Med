@@ -36,7 +36,11 @@ function getGeminiClient(runtimeKey?: string): GoogleGenAI {
 }
 
 const getReqApiKey = (req: express.Request): string | null => {
-    return req.header('X-Gemini-API-Key') || process.env.GEMINI_API_KEY || null;
+    const key = req.header('X-Gemini-API-Key') || process.env.GEMINI_API_KEY || null;
+    if (key && key.trim() !== '' && key !== 'null' && key !== 'undefined') {
+        return key.trim();
+    }
+    return null;
 };
 
 const app = express();
