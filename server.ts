@@ -48,6 +48,18 @@ app.get('/api/download-apk', (req, res) => {
   }
 });
 
+// Helper function to safely parse JSON returned by Gemini API (handling possible markdown backticks)
+function cleanAndParseJSON(text: string | null | undefined): any {
+  if (!text) {
+    throw new Error("Réponse de l'IA vide.");
+  }
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+  return JSON.parse(cleaned);
+}
+
 // API endpoint for symptom checker
 app.post('/api/symptoms/analyze', async (req, res) => {
   try {
@@ -62,7 +74,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
       : "Patient adulte type (sans profil spécifique fourni).";
 
     const prompt = `En tant qu'assistant pharmacien franco-américain de confiance, analyse les symptômes décrits par l'utilisateur et suggère des médicaments appropriés en donnant leur nom en France et leur équivalent direct ou thérapeutique aux États-Unis (USA).
-    Sers-toi de cette liste de référence pour suggérer en priorité nos médicaments connus s'ils s'appliquent : ${JSON.stringify(MEDICATIONS_DATABASE.map(m => ({ id: m.id, fr: m.nameFr, us: m.nameUs, active: m.activeIngredientFr })))}.
+    Sers-toi de cette liste de référence pour suggérer en priorité nos médicaments connus s'ils s'appliquent : ${JSON.stringify(MEDICATIONS_DATABASE.map(m => ({ id: m.id, fr: m.nameFr, us: m.nameUs, active: m.activeIngredientFr, unsafeForPregnancy: m.unsafeForPregnancy })))}.
     Adapte la posologie de manière rigoureuse en fonction du profil du patient : ${patientDesc}. Calcule bien selon le poids si c'est un enfant.
     
     Symptômes décrits : "${symptoms}"
@@ -70,7 +82,8 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     Règles absolues :
     1. Si l'état de santé semble préoccupant (gravité "medium" ou "high"), indique-le clairement et conseille d'appeler le 911 (USA) ou le 15 (France).
     2. Ne prescris rien de dangereux, indique s'il faut une ordonnance ("requiresPrescription").
-    3. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
+    3. Pour chaque médicament suggéré, indique IMPÉRATIVEMENT si ce médicament est déconseillé ou contre-indiqué chez la femme enceinte (unsafeForPregnancy: true/false) avec un avertissement explicite en français (pregnancyWarningFr).
+    4. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
 
     const ai = getGeminiClient();
     
@@ -106,9 +119,11 @@ app.post('/api/symptoms/analyze', async (req, res) => {
                   dosageForProfileFr: { type: Type.STRING, description: "Custom dosage instructions in French adjusted for this specific patient (age/weight)." },
                   dosageForProfileUs: { type: Type.STRING, description: "Custom dosage instructions in English adjusted for this specific patient (age/weight)." },
                   requiresPrescriptionFr: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in France." },
-                  requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in the US." }
+                  requiresPrescriptionUs: { type: Type.BOOLEAN, description: "Whether this medicine requires a prescription in the US." },
+                  unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                  pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
                 },
-                required: ["nameFr", "nameUs", "reasonFr", "reasonUs", "dosageForProfileFr", "dosageForProfileUs", "requiresPrescriptionFr", "requiresPrescriptionUs"]
+                required: ["nameFr", "nameUs", "reasonFr", "reasonUs", "dosageForProfileFr", "dosageForProfileUs", "requiresPrescriptionFr", "requiresPrescriptionUs", "unsafeForPregnancy", "pregnancyWarningFr"]
               }
             }
           },
@@ -118,11 +133,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     });
 
     const resultText = response.text;
-    if (!resultText) {
-      throw new Error("No response text from Gemini");
-    }
-    
-    res.json(JSON.parse(resultText));
+    res.json(cleanAndParseJSON(resultText));
   } catch (error: any) {
     console.error("Symptom Analysis Error:", error);
     res.status(500).json({ error: error.message || "Erreur lors de l'analyse des symptômes" });
@@ -145,6 +156,7 @@ app.post('/api/image/analyze', async (req, res) => {
     const prompt = `Analyse l'image de cette boîte de médicament fournie. Identifie précisément la marque, la substance active, l'origine, l'usage, les équivalences franco-américaines (si c'est français, donne l'équivalent américain et inversement), et les précautions importantes.
     Aussi, examine attentivement l'image pour repérer la DATE DE PÉREMPTION (expiration date / EXP / Valide jusqu'au) et le numéro de lot s'ils sont lisibles sur la boîte, le rabat ou le blister.
     Format de date attendu si trouvée : AAAA-MM-JJ ou AAAA-MM (ex: 2027-12-31 ou 2028-06). Si la date de péremption n'est pas clairement visible sur cette image, fixe expirationDateFound à false.
+    Indique clairement si ce médicament est déconseillé ou contre-indiqué chez la femme enceinte (unsafeForPregnancy: true/false) avec un avertissement explicite en français (pregnancyWarningFr).
     S'il te plaît, donne des instructions de posologie adaptées à ce profil de patient : ${patientDesc}.
     Rédige les explications françaises avec précision.`;
 
@@ -196,7 +208,9 @@ app.post('/api/image/analyze', async (req, res) => {
                 category: { type: Type.STRING, description: "Suggested category: 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'." },
                 expirationDate: { type: Type.STRING, description: "Detected expiration date (YYYY-MM-DD or YYYY-MM) if readable, else empty string." },
                 expirationDateFound: { type: Type.BOOLEAN, description: "True if expiration date was clearly read on the image." },
-                batchNumber: { type: Type.STRING, description: "Batch / Lot number if readable." }
+                batchNumber: { type: Type.STRING, description: "Batch / Lot number if readable." },
+                unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                pregnancyWarningFr: { type: Type.STRING, description: "Specific warning regarding pregnancy in French." }
               },
               required: [
                 "name", "countryOfOrigin", "activeIngredient", "purposeFr", "purposeUs", 
@@ -212,11 +226,7 @@ app.post('/api/image/analyze', async (req, res) => {
     });
 
     const resultText = response.text;
-    if (!resultText) {
-      throw new Error("No response text from Gemini");
-    }
-
-    res.json(JSON.parse(resultText));
+    res.json(cleanAndParseJSON(resultText));
   } catch (error: any) {
     console.error("Image Analysis Error:", error);
     res.status(500).json({ error: error.message || "Erreur lors de l'analyse de l'image de médicament" });
@@ -235,6 +245,7 @@ app.post('/api/prescription/translate', async (req, res) => {
     const prompt = `En tant qu'assistant de liaison médicale franco-américaine, traduis et explique cette ordonnance médicale pour un expatrié ou un voyageur.
     Identifie chaque médicament mentionné, donne son principe actif, sa fonction principale, la traduction des posologies, et surtout les équivalents locaux correspondants (USA si l'ordonnance est française, France si l'ordonnance est américaine).
     Indique clairement si les équivalents américains nécessitent une ordonnance ("Prescription required" / Rx) ou sont en vente libre (OTC - Over-the-counter).
+    Pour chaque médicament, indique aussi s'il est déconseillé/contre-indiqué chez la femme enceinte (unsafeForPregnancy: true/false) avec une mise en garde en français (pregnancyWarningFr).
     Prends en compte le profil patient suivant : ${patientDesc}.
     
     Données de l'ordonnance : ${prescriptionText ? `Texte saisi : "${prescriptionText}"` : "Une image d'ordonnance a été transmise."}`;
@@ -282,7 +293,9 @@ app.post('/api/prescription/translate', async (req, res) => {
                   purpose: { type: Type.STRING, description: "What the medicine cures or targets." },
                   dosage: { type: Type.STRING, description: "Translated dosage instructions adjusted for the patient profile." },
                   isPrescriptionOnlyUS: { type: Type.BOOLEAN, description: "Is this prescription-only (Rx) in the US?" },
-                  isPrescriptionOnlyFR: { type: Type.BOOLEAN, description: "Is this prescription-only in France?" }
+                  isPrescriptionOnlyFR: { type: Type.BOOLEAN, description: "Is this prescription-only in France?" },
+                  unsafeForPregnancy: { type: Type.BOOLEAN, description: "True if contraindicated or discouraged during pregnancy." },
+                  pregnancyWarningFr: { type: Type.STRING, description: "Pregnancy warning in French." }
                 },
                 required: ["originalName", "molecule", "usEquivalent", "purpose", "dosage", "isPrescriptionOnlyUS", "isPrescriptionOnlyFR"]
               }
@@ -295,11 +308,7 @@ app.post('/api/prescription/translate', async (req, res) => {
     });
 
     const resultText = response.text;
-    if (!resultText) {
-      throw new Error("No response text from Gemini");
-    }
-
-    res.json(JSON.parse(resultText));
+    res.json(cleanAndParseJSON(resultText));
   } catch (error: any) {
     console.error("Prescription Translation Error:", error);
     res.status(500).json({ error: "Erreur lors de la traduction de l'ordonnance: " + error.message });
@@ -351,8 +360,7 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
     });
 
     const resultText = response.text;
-    if (!resultText) throw new Error("No response text from Gemini");
-    res.json(JSON.parse(resultText));
+    res.json(cleanAndParseJSON(resultText));
   } catch (error: any) {
     console.error("Expiration Scan Error:", error);
     res.status(500).json({ error: "Erreur lors du scan de la date de péremption: " + error.message });

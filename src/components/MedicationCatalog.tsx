@@ -28,6 +28,7 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [targetFilter, setTargetFilter] = useState<'all' | 'adult' | 'infant'>('all');
+  const [pregnancyFilter, setPregnancyFilter] = useState<'all' | 'safe' | 'discouraged'>('all');
   const [filterMode, setFilterMode] = useState<'all' | 'fr_to_us' | 'us_to_fr'>('all');
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
 
@@ -54,7 +55,15 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
       matchesTarget = med.targetGroup === 'adult' || med.targetGroup === 'all';
     }
 
-    return matchesSearch && matchesCategory && matchesTarget;
+    // Pregnancy matching
+    let matchesPregnancy = true;
+    if (pregnancyFilter === 'safe') {
+      matchesPregnancy = !med.unsafeForPregnancy;
+    } else if (pregnancyFilter === 'discouraged') {
+      matchesPregnancy = !!med.unsafeForPregnancy;
+    }
+
+    return matchesSearch && matchesCategory && matchesTarget && matchesPregnancy;
   });
 
   const getCustomDosage = (med: Medication, profile: UserProfile | null) => {
@@ -188,16 +197,16 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
           </button>
         </div>
 
-        {/* Target Profile Filter (Adult vs Child/Infant) */}
+        {/* Target Profile Filter (Adult vs Child/Infant) & Pregnancy Filter */}
         <div className="flex flex-wrap items-center gap-2 text-xs pt-3 border-t border-slate-100">
-          <span className="text-slate-400 font-medium">Profil cible :</span>
+          <span className="text-slate-400 font-medium">Profil :</span>
           <button
             onClick={() => setTargetFilter('all')}
             className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
               targetFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
             }`}
           >
-            👥 Tous les âges
+            👥 Tous âges
           </button>
           <button
             onClick={() => setTargetFilter('adult')}
@@ -205,7 +214,7 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
               targetFilter === 'adult' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
             }`}
           >
-            🧑 Adultes uniquement
+            🧑 Adulte
           </button>
           <button
             onClick={() => setTargetFilter('infant')}
@@ -213,8 +222,36 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
               targetFilter === 'infant' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
             }`}
           >
-            👶 Enfants & Nourrissons
+            👶 Enfant / Bébé
           </button>
+
+          <span className="text-slate-300 mx-1">|</span>
+          <span className="text-slate-400 font-medium">🤰 Grossesse :</span>
+          <button
+            onClick={() => setPregnancyFilter('all')}
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              pregnancyFilter === 'all' ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Tous
+          </button>
+          <button
+            onClick={() => setPregnancyFilter('safe')}
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              pregnancyFilter === 'safe' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+            }`}
+          >
+            ✓ Autorisé
+          </button>
+          <button
+            onClick={() => setPregnancyFilter('discouraged')}
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              pregnancyFilter === 'discouraged' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+            }`}
+          >
+            ⚠️ Déconseillé
+          </button>
+
           {activeProfile && (
             <span className="text-xs text-emerald-600 font-medium ml-auto bg-emerald-50 px-2.5 py-1 rounded-lg">
               Profil actif : {activeProfile.name} ({activeProfile.age} ans)
@@ -423,6 +460,27 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
               </div>
             </div>
 
+            {/* Pregnancy Safety Banner */}
+            <div className={`p-4 rounded-xl border text-xs space-y-1 ${
+              selectedMed.unsafeForPregnancy 
+                ? 'bg-rose-50 border-rose-200 text-rose-900' 
+                : 'bg-teal-50 border-teal-200 text-teal-900'
+            }`}>
+              <h5 className="font-extrabold flex items-center gap-1.5 text-sm">
+                <span>🤰</span>
+                {selectedMed.unsafeForPregnancy 
+                  ? '⚠️ ATTENTION : DÉCONSEILLÉ OU CONTRE-INDIQUÉ PENDANT LA GROSSESSE' 
+                  : '✓ COMPATIBILITÉ GROSSESSE (Sous réserve d\'avis médical)'}
+              </h5>
+              <p className="font-medium leading-relaxed">
+                {selectedMed.pregnancyWarningFr || (
+                  selectedMed.unsafeForPregnancy
+                    ? 'Ce médicament présente des risques connus pour la mère ou le fœtus. Consultez impérativement votre médecin ou pharmacien avant toute prise.'
+                    : 'Ce médicament est généralement considéré comme sans risque majeur pendant la grossesse lorsqu\'il est pris selon les doses recommandées.'
+                )}
+              </p>
+            </div>
+
             {/* Side effects list */}
             <div className="border border-slate-100 rounded-xl p-4 text-xs space-y-2">
               <h5 className="font-bold text-slate-700">Effets Secondaires Possibles</h5>
@@ -534,6 +592,16 @@ export default function MedicationCatalog({ activeProfile, favorites, toggleFavo
                            med.targetGroup === 'child' ? '👦 Enfant' :
                            med.targetGroup === 'adult' ? '🧑 Adulte' : '👥 Tous'}
                         </span>
+
+                        {med.unsafeForPregnancy ? (
+                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                            🤰 Déconseillé Grossesse
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200 flex items-center gap-1">
+                            🤰 Autorisé Grossesse
+                          </span>
+                        )}
                       </div>
                       
                       <button

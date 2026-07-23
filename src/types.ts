@@ -40,6 +40,8 @@ export interface Medication {
   contraindications: Contraindication[];
   category: string; // e.g., 'pain', 'cold', 'stomach', 'allergy', 'skin', 'other'
   targetGroup: 'adult' | 'child' | 'infant' | 'all'; // target patient group
+  unsafeForPregnancy?: boolean; // True if contraindicated or discouraged during pregnancy
+  pregnancyWarningFr?: string; // Specific warning for pregnant women
 }
 
 export interface SymptomAnalysisRequest {
@@ -59,6 +61,8 @@ export interface SymptomAnalysisResponse {
     dosageForProfileUs: string;
     requiresPrescriptionFr: boolean;
     requiresPrescriptionUs: boolean;
+    unsafeForPregnancy?: boolean;
+    pregnancyWarningFr?: string;
   }[];
   severity: 'low' | 'medium' | 'high'; // high means consult a doctor immediately
 }
@@ -82,6 +86,8 @@ export interface ImageAnalysisResponse {
     expirationDate?: string; // Formatted YYYY-MM-DD or YYYY-MM if detected
     expirationDateFound: boolean;
     batchNumber?: string;
+    unsafeForPregnancy?: boolean;
+    pregnancyWarningFr?: string;
   };
 }
 

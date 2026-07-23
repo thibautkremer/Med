@@ -250,6 +250,24 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
                       </div>
                     </div>
 
+                    {/* Pregnancy Notice */}
+                    {med.unsafeForPregnancy ? (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-900 p-2.5 rounded-lg text-xs font-semibold flex items-start gap-1.5 mt-2">
+                        <span className="text-sm">🤰</span>
+                        <div>
+                          <span className="font-extrabold text-rose-900 block text-[11px]">⚠️ DÉCONSEILLÉ GROSSESSE</span>
+                          <span className="text-[10px] text-rose-700 font-normal leading-tight block mt-0.5">
+                            {med.pregnancyWarningFr || "Interdit ou fortement déconseillé aux femmes enceintes."}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-teal-50 border border-teal-200 text-teal-800 p-2 rounded-lg text-[10px] font-medium flex items-center gap-1.5 mt-2">
+                        <span className="text-sm">🤰</span>
+                        <span>Compatible grossesse (selon posologie)</span>
+                      </div>
+                    )}
+
                     {/* Prescription requirements */}
                     <div className="flex justify-between text-[9px] font-bold text-slate-400 mt-2">
                       <span className={med.requiresPrescriptionFr ? "text-amber-600" : "text-emerald-600"}>

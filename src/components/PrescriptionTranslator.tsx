@@ -317,7 +317,7 @@ export default function PrescriptionTranslator({ activeProfile }: PrescriptionTr
                       <p className="font-extrabold text-slate-400 uppercase text-[9px] tracking-wider">Équivalent recommandé :</p>
                       <p className="font-extrabold text-slate-800">{med.usEquivalent}</p>
                       
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex flex-wrap gap-2 pt-1">
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold ${
                           med.isPrescriptionOnlyUS 
                             ? 'bg-amber-100 text-amber-800' 
@@ -332,6 +332,15 @@ export default function PrescriptionTranslator({ activeProfile }: PrescriptionTr
                         }`}>
                           FR : {med.isPrescriptionOnlyFR ? "Ordonnance requise" : "Vente libre"}
                         </span>
+                        {med.unsafeForPregnancy ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1">
+                            🤰 Déconseillé Grossesse
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-extrabold bg-teal-100 text-teal-800 flex items-center gap-1">
+                            🤰 Ok Grossesse
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

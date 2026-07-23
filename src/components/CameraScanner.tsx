@@ -671,6 +671,23 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
                   <strong>FR :</strong> {result.detectedMedicine.precautionsFr}<br/>
                   <strong className="block mt-1">US :</strong> {result.detectedMedicine.precautionsUs}
                 </p>
+
+                {result.detectedMedicine.unsafeForPregnancy ? (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-900 p-2.5 rounded-lg font-semibold flex items-start gap-1.5 mt-2">
+                    <span className="text-base">🤰</span>
+                    <div>
+                      <span className="font-extrabold text-rose-900 block text-xs">⚠️ DÉCONSEILLÉ PENDANT LA GROSSESSE</span>
+                      <span className="text-[11px] text-rose-800 font-normal leading-snug block mt-0.5">
+                        {result.detectedMedicine.pregnancyWarningFr || "Ce médicament comporte des risques durant la grossesse."}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-teal-50 border border-teal-200 text-teal-800 p-2 rounded-lg text-[11px] font-medium flex items-center gap-1.5 mt-2">
+                    <span className="text-base">🤰</span>
+                    <span>Considéré comme compatible avec la grossesse (selon avis médical).</span>
+                  </div>
+                )}
               </div>
             </div>
 
