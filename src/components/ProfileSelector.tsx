@@ -363,7 +363,7 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                             err.type === 'success' ? '[SUCCÈS]' : 
                             err.type === 'action' ? '[ACTION]' : '[INFO]';
                         return (
-                            <div key={err.id} className={`${colorClass} leading-tight border-b border-slate-900 pb-1`}>
+                            <div key={err.id} className={`${colorClass} leading-tight border-b border-slate-900 pb-1 break-all whitespace-pre-wrap`}>
                                 <span className="text-slate-500">[{new Date(err.timestamp).toLocaleTimeString()}]</span> <span className="font-bold">{badge}</span> {err.message}
                             </div>
                         );

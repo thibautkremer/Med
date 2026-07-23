@@ -46,3 +46,61 @@ export const errorService = {
         });
     }
 };
+
+// Global Error & Promise Rejection Interceptors for mobile/android debugging
+if (typeof window !== 'undefined') {
+    // 1. Capture unhandled runtime exceptions
+    window.addEventListener('error', (event) => {
+        const message = event.error ? (event.error.stack || event.error.message) : event.message;
+        errorService.log(`[Exception] ${message}`, 'error');
+    });
+
+    // 2. Capture unhandled Promise rejections (e.g., failed fetch, API errors)
+    window.addEventListener('unhandledrejection', (event) => {
+        let message = 'Promise Rejection';
+        if (event.reason) {
+            if (event.reason instanceof Error) {
+                message = event.reason.stack || event.reason.message;
+            } else if (typeof event.reason === 'object') {
+                try {
+                    message = JSON.stringify(event.reason);
+                } catch {
+                    message = String(event.reason);
+                }
+            } else {
+                message = String(event.reason);
+            }
+        }
+        errorService.log(`[Rejection] ${message}`, 'error');
+    });
+
+    // 3. Capture all console.error calls
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+        // Forward to original console.error so it still shows in devtools/browser logs
+        originalConsoleError.apply(console, args);
+
+        // Convert args to string
+        const message = args
+            .map(arg => {
+                if (arg instanceof Error) {
+                    return arg.stack || arg.message;
+                }
+                if (typeof arg === 'object') {
+                    try {
+                        return JSON.stringify(arg);
+                    } catch {
+                        return String(arg);
+                    }
+                }
+                return String(arg);
+            })
+            .join(' ');
+
+        // Prevent infinite loop if something in errorService triggers console.error
+        if (!message.includes('[Exception]') && !message.includes('[Rejection]') && !message.includes('[Console Error]')) {
+            errorService.log(`[Console] ${message}`, 'error');
+        }
+    };
+}
+
