@@ -1,6 +1,6 @@
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ais-pre-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app';
 
 export const aiService = {
   async analyzeSymptoms(symptoms: string, profile: UserProfile | null): Promise<SymptomAnalysisResponse> {
