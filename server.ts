@@ -10,7 +10,17 @@ dotenv.config();
 
 // Lazy initialize Gemini AI client to prevent startup crashes if GEMINI_API_KEY is missing
 let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI {
+function getGeminiClient(runtimeKey?: string): GoogleGenAI {
+  if (runtimeKey) {
+    return new GoogleGenAI({
+      apiKey: runtimeKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
     aiClient = new GoogleGenAI({
@@ -24,6 +34,10 @@ function getGeminiClient(): GoogleGenAI {
   }
   return aiClient;
 }
+
+const getReqApiKey = (req: express.Request): string | null => {
+    return req.header('X-Gemini-API-Key') || process.env.GEMINI_API_KEY || null;
+};
 
 const app = express();
 const PORT = 3000;
@@ -107,10 +121,11 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     3. Pour chaque médicament suggéré, indique IMPÉRATIVEMENT si ce médicament est déconseillé ou contre-indiqué chez la femme enceinte (unsafeForPregnancy: true/false) avec un avertissement explicite en français (pregnancyWarningFr).
     4. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
 
-    const ai = getGeminiClient();
+    const runtimeKey = getReqApiKey(req) || undefined;
+    const ai = getGeminiClient(runtimeKey);
     
     // Check if key is present and not the placeholder
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = runtimeKey;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante ou non configurée.", 
@@ -202,9 +217,10 @@ app.post('/api/image/analyze', async (req, res) => {
       text: prompt
     };
 
-    const ai = getGeminiClient();
+    const runtimeKey = getReqApiKey(req) || undefined;
+    const ai = getGeminiClient(runtimeKey);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = runtimeKey;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
@@ -281,9 +297,10 @@ app.post('/api/prescription/translate', async (req, res) => {
     
     Données de l'ordonnance : ${prescriptionText ? `Texte saisi : "${prescriptionText}"` : "Une image d'ordonnance a été transmise."}`;
 
-    const ai = getGeminiClient();
+    const runtimeKey = getReqApiKey(req) || undefined;
+    const ai = getGeminiClient(runtimeKey);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = runtimeKey;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
@@ -359,9 +376,10 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
     Analyse l'image pour extraire LA DATE DE PÉREMPTION (Expiry date, EXP, MM/YY, YYYY-MM, etc.) et le numéro de lot (Batch / Lot #).
     Renvoie la date au format YYYY-MM-DD ou YYYY-MM (ex: 2027-12-31 ou 2028-06). Si tu ne trouves pas la date, fixe expirationDateFound à false.`;
 
-    const ai = getGeminiClient();
+    const runtimeKey = getReqApiKey(req) || undefined;
+    const ai = getGeminiClient(runtimeKey);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = runtimeKey;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 
@@ -424,9 +442,10 @@ Règles de réponse :
 4. Adapte les conseils au profil du patient si pertinent.
 5. Rappelle de toujours consulter un médecin ou pharmacien en cas de symptôme grave ou doute.`;
 
-    const ai = getGeminiClient();
+    const runtimeKey = getReqApiKey(req) || undefined;
+    const ai = getGeminiClient(runtimeKey);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = runtimeKey;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "MISSING_KEY") {
       return res.status(403).json({ 
         error: "Clé API Gemini manquante.", 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { User, Plus, Trash2, Shield, Heart, Scale, Ruler, Calendar, Check } from 'lucide-react';
+import { errorService } from '../services/errorService';
 
 interface ProfileSelectorProps {
   activeProfile: UserProfile | null;
@@ -32,6 +33,12 @@ const DEFAULT_PROFILES: UserProfile[] = [
 export default function ProfileSelector({ activeProfile, setActiveProfile, onProfilesChanged }: ProfileSelectorProps) {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [errors, setErrors] = useState(errorService.getErrors());
+
+  useEffect(() => {
+    const interval = setInterval(() => setErrors(errorService.getErrors()), 1000);
+    return () => clearInterval(interval);
+  }, []);
   
   // New profile form state
   const [name, setName] = useState('');
@@ -290,6 +297,36 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
         <p>
           <strong>Avertissement médical :</strong> Les dosages et équivalences fournis par l'application sont indicatifs. Consultez toujours un médecin ou un pharmacien agréé avant de prendre tout traitement.
         </p>
+      </div>
+
+      {/* Admin Panel */}
+      <div className="mt-6 p-4 bg-slate-900 rounded-xl text-white space-y-4">
+        <h3 className="font-bold text-sm">Console Admin</h3>
+        
+        {/* API Key Config */}
+        <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Clé API Gemini (Runtime Override)</label>
+            <input 
+                type="password"
+                placeholder="Entrez votre clé API manuellement"
+                className="w-full text-xs p-2 rounded bg-slate-800 border border-slate-700 text-white"
+                onChange={(e) => localStorage.setItem('RUNTIME_GEMINI_API_KEY', e.target.value)}
+                defaultValue={localStorage.getItem('RUNTIME_GEMINI_API_KEY') || ''}
+            />
+            <p className="text-[10px] text-slate-500 mt-1">
+                <strong>Attention :</strong> Cette clé est stockée localement dans votre navigateur.
+            </p>
+        </div>
+
+        {/* Error Console */}
+        <div>
+            <h4 className="text-[10px] text-slate-400 uppercase font-bold mb-1">Journal des erreurs</h4>
+            <div className="bg-black p-2 rounded text-[10px] font-mono h-24 overflow-y-auto">
+                {errors.length === 0 ? <p className="text-slate-600 italic">Aucune erreur détectée.</p> : errors.map(err => (
+                    <p key={err.id} className="text-red-400 mb-1">{new Date(err.timestamp).toLocaleTimeString()}: {err.message}</p>
+                ))}
+            </div>
+        </div>
       </div>
     </div>
   );
