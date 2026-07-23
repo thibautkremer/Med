@@ -14,9 +14,12 @@ const getHeaders = () => {
 
 export const aiService = {
   async analyzeSymptoms(symptoms: string, profile: UserProfile | null): Promise<SymptomAnalysisResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/symptoms/analyze`, {
+    const url = `${API_BASE_URL}/api/symptoms/analyze`;
+    const headers = getHeaders();
+    console.log('Appel API (analyzeSymptoms):', url, { headers: { ...headers, 'X-Gemini-API-Key': headers['X-Gemini-API-Key'] ? '***' : 'missing' } });
+    const response = await fetch(url, {
       method: 'POST',
-      headers: getHeaders(),
+      headers,
       body: JSON.stringify({ symptoms, profile })
     });
     if (!response.ok) {
@@ -29,6 +32,7 @@ export const aiService = {
             const errorText = await response.text();
             errorMessage = `Erreur serveur (${response.status}): ${errorText.substring(0, 50)}...`;
         }
+        console.error('Erreur API (analyzeSymptoms):', errorMessage);
         errorService.log(errorMessage);
         throw new Error(errorMessage);
     }
@@ -36,9 +40,12 @@ export const aiService = {
   },
 
   async chatWithPharmacist(messages: {role: string, text: string}[], profile: UserProfile | null): Promise<string> {
-    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+    const url = `${API_BASE_URL}/api/chat`;
+    const headers = getHeaders();
+    console.log('Appel API (chatWithPharmacist):', url, { headers: { ...headers, 'X-Gemini-API-Key': headers['X-Gemini-API-Key'] ? '***' : 'missing' } });
+    const response = await fetch(url, {
       method: 'POST',
-      headers: getHeaders(),
+      headers,
       body: JSON.stringify({ messages, profile })
     });
     if (!response.ok) {
@@ -51,6 +58,7 @@ export const aiService = {
             const errorText = await response.text();
             errorMessage = `Erreur serveur (${response.status}): ${errorText.substring(0, 50)}...`;
         }
+        console.error('Erreur API (chatWithPharmacist):', errorMessage);
         errorService.log(errorMessage);
         throw new Error(errorMessage);
     }

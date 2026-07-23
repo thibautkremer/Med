@@ -313,13 +313,24 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
         {/* API Key Config */}
         <div>
             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Clé API Gemini (Runtime Override)</label>
-            <input 
-                type="password"
-                placeholder="Entrez votre clé API manuellement"
-                className="w-full text-xs p-2 rounded bg-slate-800 border border-slate-700 text-white"
-                onChange={handleApiKeyChange}
-                value={apiKey}
-            />
+            <div className="flex gap-2">
+                <input 
+                    type="password"
+                    placeholder="Entrez votre clé API manuellement"
+                    className="w-full text-xs p-2 rounded bg-slate-800 border border-slate-700 text-white"
+                    onChange={handleApiKeyChange}
+                    value={apiKey}
+                />
+                <button 
+                    onClick={() => {
+                        console.log('Clé API enregistrée manuellement:', apiKey.substring(0, 4) + '...');
+                        alert('Clé API enregistrée !');
+                    }}
+                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700"
+                >
+                    Save
+                </button>
+            </div>
             <p className="text-[10px] text-slate-500 mt-1">
                 <strong>Attention :</strong> Cette clé est stockée localement dans votre navigateur.
             </p>
