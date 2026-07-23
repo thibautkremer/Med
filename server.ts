@@ -154,7 +154,10 @@ app.post('/api/symptoms/analyze', async (req, res) => {
       }
     });
 
-    const resultText = response.text;
+    let resultText = response.text;
+    if (typeof resultText !== 'string' || resultText.trim() === '') {
+      resultText = '{"analysis": "Désolé, je n\'ai pas pu analyser ces symptômes pour le moment. Veuillez réessayer.", "severity": "low", "suggestedMedications": []}';
+    }
     const parsed = cleanAndParseJSON(resultText);
     const normalized = {
       analysis: parsed?.analysis || parsed?.diagnostic || parsed?.summary || parsed?.advice || (typeof parsed === 'string' ? parsed : "Analyse médicale complétée."),
@@ -440,7 +443,8 @@ Règles de réponse :
       contents: promptText,
     });
 
-    const reply = response.text || "Désolé, je n'ai pas pu générer de réponse. Veuillez reformuler votre question.";
+    const text = response.text;
+    const reply = (typeof text === 'string' && text.trim() !== '') ? text : "Désolé, je n'ai pas pu générer de réponse. Veuillez reformuler votre question.";
     return res.json({ reply });
   } catch (error: any) {
     console.error("AI Chat Error:", error);

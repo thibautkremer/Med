@@ -44,10 +44,13 @@ export default function AIChat({ activeProfile }: AIChatProps) {
       });
 
       let data: any = null;
+      let rawText = "";
       try {
-        data = await response.json();
+        rawText = await response.text();
+        data = JSON.parse(rawText);
       } catch (parseErr) {
-        console.error("Failed to parse JSON response from /api/chat");
+        console.error("Failed to parse JSON response from /api/chat. Raw:", rawText.substring(0, 200));
+        throw new Error(`Erreur: La réponse du serveur n'est pas un JSON valide (Status: ${response.status}). Extrait: ${rawText.substring(0, 100)}`);
       }
 
       if (!response.ok) {

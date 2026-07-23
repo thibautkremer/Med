@@ -38,10 +38,13 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
       });
 
       let data: any = null;
+      let rawText = "";
       try {
-        data = await response.json();
+        rawText = await response.text();
+        data = JSON.parse(rawText);
       } catch (parseErr) {
-        console.error("Failed to parse JSON response from /api/symptoms/analyze");
+        console.error("Failed to parse JSON response from /api/symptoms/analyze. Raw:", rawText.substring(0, 200));
+        throw new Error(`Erreur serveur: Réponse non-JSON (Status: ${response.status}). Extrait: ${rawText.substring(0, 100)}`);
       }
 
       if (!response.ok) {
