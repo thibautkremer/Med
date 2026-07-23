@@ -43,12 +43,16 @@ export default function AIChat({ activeProfile }: AIChatProps) {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erreur de connexion avec le service IA.");
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
       }
 
-      const data = await response.json();
+      if (!response.ok || !data) {
+        throw new Error(data?.error || data?.details || `Erreur de communication avec l'assistant (${response.status}).`);
+      }
+
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'bot', text: e.message || "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA." }]);

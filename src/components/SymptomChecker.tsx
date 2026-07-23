@@ -37,12 +37,20 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur de communication avec le serveur de santé.');
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || data?.details || `Erreur de communication avec le serveur de santé (${response.status}).`);
+      }
+
+      if (!data) {
+        throw new Error("Réponse invalide reçue du serveur.");
+      }
+
       setResult(data);
     } catch (err: any) {
       console.error(err);

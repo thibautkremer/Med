@@ -182,11 +182,16 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
         })
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur serveur lors de l'analyse visuelle.");
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
       }
 
-      const data = await response.json();
+      if (!response.ok || !data) {
+        throw new Error(data?.error || data?.details || "Erreur serveur lors de l'analyse visuelle.");
+      }
+
       setResult(data);
 
       if (data.detectedMedicine?.expirationDate) {

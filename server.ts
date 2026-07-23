@@ -84,7 +84,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -170,7 +170,7 @@ app.post('/api/image/analyze', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: [imagePart, textPart],
       config: {
         responseMimeType: "application/json",
@@ -261,7 +261,7 @@ app.post('/api/prescription/translate', async (req, res) => {
     contents.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -330,7 +330,7 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: [
         { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
         { text: prompt }
@@ -399,7 +399,7 @@ Règles de réponse :
       `\nAssistant:`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: promptText,
     });
 
@@ -408,6 +408,22 @@ Règles de réponse :
     console.error("AI Chat Error:", error);
     res.status(500).json({ error: "Erreur de réponse de l'assistant IA: " + error.message });
   }
+});
+
+// Explicit 404 handler for unmatched /api routes so they return JSON, never HTML
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: `Route API introuvable: ${req.originalUrl}` });
+});
+
+// Global Express error handling middleware to catch express JSON body parsing errors & internal errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Express Global Error Handler:", err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err.status || 500).json({ 
+    error: err.message || "Erreur interne du serveur" 
+  });
 });
 
 // Setup Vite Development Server or Serve Compiled Static Assets

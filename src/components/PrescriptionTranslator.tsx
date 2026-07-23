@@ -71,15 +71,20 @@ export default function PrescriptionTranslator({ activeProfile }: PrescriptionTr
         })
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur serveur lors de la traduction.");
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
       }
 
-      const data = await response.json();
+      if (!response.ok || !data) {
+        throw new Error(data?.error || data?.details || "Erreur serveur lors de la traduction.");
+      }
+
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      setError("Impossible de traduire l'ordonnance. Veuillez vérifier votre texte et réessayer.");
+      setError(err.message || "Impossible de traduire l'ordonnance. Veuillez vérifier votre texte et réessayer.");
     } finally {
       setLoading(false);
     }
