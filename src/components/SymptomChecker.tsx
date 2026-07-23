@@ -46,7 +46,7 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      setError("Désolé, impossible d'analyser vos symptômes pour le moment. Veuillez vérifier votre connexion.");
+      setError(err.message || "Désolé, impossible d'analyser vos symptômes pour le moment. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }

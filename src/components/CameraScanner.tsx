@@ -46,9 +46,14 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
     setCapturedImage(null);
     setResult(null);
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("La caméra n'est pas supportée par votre navigateur ou votre connexion n'est pas sécurisée (HTTPS requis).");
+      return;
+    }
+
     try {
-      // Try back camera first, then just generic camera
-      let stream;
+      // Try back camera first, then generic camera
+      let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       } catch (err) {
@@ -56,26 +61,30 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
       }
       
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-          setStreamActive(true);
-        } catch (playErr) {
-          console.error("Video play failed:", playErr);
-          setError("Impossible de démarrer la vidéo.");
-        }
-      }
+      setStreamActive(true);
     } catch (err: any) {
       console.error(err);
-      setError("Impossible d'accéder à la caméra. Vérifiez les permissions de votre navigateur ou de votre système, ou téléversez un fichier.");
+      setError("Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur/système ou importez une image.");
     }
   };
+
+  useEffect(() => {
+    if (streamActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch((playErr) => {
+        console.error("Video play failed:", playErr);
+        setError("Impossible de démarrer le flux vidéo.");
+      });
+    }
+  }, [streamActive]);
 
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setStreamActive(false);
   };

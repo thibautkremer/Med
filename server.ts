@@ -84,7 +84,7 @@ app.post('/api/symptoms/analyze', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -170,7 +170,7 @@ app.post('/api/image/analyze', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: [imagePart, textPart],
       config: {
         responseMimeType: "application/json",
@@ -261,7 +261,7 @@ app.post('/api/prescription/translate', async (req, res) => {
     contents.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -330,7 +330,7 @@ app.post('/api/image/analyze-expiration', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: [
         { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
         { text: prompt }
@@ -399,7 +399,7 @@ Règles de réponse :
       `\nAssistant:`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: promptText,
     });
 

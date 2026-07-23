@@ -51,7 +51,7 @@ export default function AIChat({ activeProfile }: AIChatProps) {
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'bot', text: "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA." }]);
+      setMessages(prev => [...prev, { role: 'bot', text: e.message || "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA." }]);
     } finally {
       setLoading(false);
     }
