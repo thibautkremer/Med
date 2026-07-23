@@ -1,11 +1,19 @@
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 import { errorService } from './errorService';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || '';
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const runtimeUrl = localStorage.getItem('RUNTIME_API_BASE_URL');
+    if (runtimeUrl && runtimeUrl.trim() !== '' && runtimeUrl !== 'null' && runtimeUrl !== 'undefined') {
+      return runtimeUrl.trim().replace(/\/$/, '');
+    }
+  }
+  return ((import.meta as any).env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+};
 
 const getHeaders = () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    const runtimeKey = localStorage.getItem('RUNTIME_GEMINI_API_KEY');
+    const runtimeKey = typeof localStorage !== 'undefined' ? localStorage.getItem('RUNTIME_GEMINI_API_KEY') : null;
     console.log('DEBUG: Runtime API key from localStorage:', runtimeKey ? '***' : 'null');
     if (runtimeKey && runtimeKey.trim() !== '' && runtimeKey !== 'null' && runtimeKey !== 'undefined') {
         headers['X-Gemini-API-Key'] = runtimeKey.trim();
@@ -15,7 +23,8 @@ const getHeaders = () => {
 
 export const aiService = {
   async analyzeSymptoms(symptoms: string, profile: UserProfile | null): Promise<SymptomAnalysisResponse> {
-    const url = `${API_BASE_URL}/api/symptoms/analyze`;
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}/api/symptoms/analyze`;
     const headers = getHeaders();
     errorService.action(`Appel API (analyzeSymptoms): ${symptoms.substring(0, 40)}...`);
     const response = await fetch(url, {
@@ -42,7 +51,8 @@ export const aiService = {
   },
 
   async chatWithPharmacist(messages: {role: string, text: string}[], profile: UserProfile | null): Promise<string> {
-    const url = `${API_BASE_URL}/api/chat`;
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}/api/chat`;
     const headers = getHeaders();
     const lastMsg = messages[messages.length - 1]?.text || '';
     errorService.action(`Assistant IA - Envoi message: "${lastMsg.substring(0, 40)}..."`);
@@ -71,7 +81,8 @@ export const aiService = {
 
   async analyzeMedicineImage(imageBase64: string, profile: UserProfile | null): Promise<any> {
     errorService.action('Appel API (analyzeMedicineImage) - Analyse photo/boîte de médicament');
-    const response = await fetch(`${API_BASE_URL}/api/image/analyze`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/image/analyze`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ imageBase64, profile })
@@ -96,7 +107,8 @@ export const aiService = {
 
   async translatePrescription(prescriptionText: string, imageBase64: string | null, profile: UserProfile | null): Promise<any> {
     errorService.action('Appel API (translatePrescription) - Traduction / Analyse d\'ordonnance');
-    const response = await fetch(`${API_BASE_URL}/api/prescription/translate`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/prescription/translate`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ prescriptionText, imageBase64, profile })
@@ -121,7 +133,8 @@ export const aiService = {
 
   async analyzeExpiration(imageBase64: string): Promise<any> {
     errorService.action('Appel API (analyzeExpiration) - Lecture de date de péremption');
-    const response = await fetch(`${API_BASE_URL}/api/image/analyze-expiration`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/image/analyze-expiration`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ imageBase64 })

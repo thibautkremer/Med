@@ -35,6 +35,7 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
   const [isAdding, setIsAdding] = useState(false);
   const [errors, setErrors] = useState(errorService.getErrors());
   const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || '');
+  const [apiUrl, setApiUrl] = useState(localStorage.getItem('RUNTIME_API_BASE_URL') || '');
 
   useEffect(() => {
     const unsubscribe = errorService.subscribe(() => {
@@ -47,6 +48,12 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
     const value = e.target.value;
     setApiKey(value);
     localStorage.setItem('RUNTIME_GEMINI_API_KEY', value);
+  };
+
+  const handleApiUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setApiUrl(value);
+    localStorage.setItem('RUNTIME_API_BASE_URL', value);
   };
   
   // New profile form state
@@ -335,6 +342,32 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
             </div>
             <p className="text-[10px] text-slate-500 mt-1">
                 <strong>Attention :</strong> Cette clé est stockée localement dans votre navigateur.
+            </p>
+        </div>
+
+        {/* API Base URL Config */}
+        <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">URL du Serveur API Back-end (Requis sur Mobile)</label>
+            <div className="flex gap-2">
+                <input 
+                    type="text"
+                    placeholder="Ex: https://ais-pre-...run.app"
+                    className="w-full text-xs p-2 rounded bg-slate-800 border border-slate-700 text-white"
+                    onChange={handleApiUrlChange}
+                    value={apiUrl}
+                />
+                <button 
+                    onClick={() => {
+                        console.log('URL de l\'API enregistrée:', apiUrl);
+                        alert('URL de l\'API enregistrée !');
+                    }}
+                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700"
+                >
+                    Save
+                </button>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+                Laissez vide sur le Web. Saisissez l'URL Cloud Run sur mobile (ex: <code>https://ais-pre-...run.app</code>).
             </p>
         </div>
 
