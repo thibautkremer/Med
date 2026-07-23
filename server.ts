@@ -120,8 +120,9 @@ app.post('/api/symptoms/analyze', async (req, res) => {
       apiKey: runtimeKey
     });
 
+    let response: any;
     try {
-        const response = await ai.models.generateContent({
+        response = await ai.models.generateContent({
           model: "gemini-3.6-flash",
           contents: prompt,
           config: {

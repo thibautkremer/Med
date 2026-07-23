@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ImageAnalysisResponse, CabinetItem } from '../types';
 import { aiService } from '../services/aiService';
+import { errorService } from '../services/errorService';
 import {
   Camera, Upload, RefreshCw, AlertTriangle, CheckCircle, 
   HelpCircle, Eye, ShoppingBag, ArrowRight, ShieldCheck, Heart, Trash2,
@@ -163,6 +164,7 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
 
   // Perform full-stack API image analysis
   const analyzeBoxImage = async (base64WithPrefix: string, mimeType: string, hintPrompt?: string) => {
+    errorService.action("Clic sur Analyser la boîte / photo");
     setLoading(true);
     setError(null);
 

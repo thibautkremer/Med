@@ -37,8 +37,10 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
   const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || '');
 
   useEffect(() => {
-    const interval = setInterval(() => setErrors(errorService.getErrors()), 1000);
-    return () => clearInterval(interval);
+    const unsubscribe = errorService.subscribe(() => {
+      setErrors(errorService.getErrors());
+    });
+    return unsubscribe;
   }, []);
 
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -336,13 +338,37 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
             </p>
         </div>
 
-        {/* Error Console */}
+        {/* Error / Action Console */}
         <div>
-            <h4 className="text-[10px] text-slate-400 uppercase font-bold mb-1">Journal des erreurs</h4>
-            <div className="bg-black p-2 rounded text-[10px] font-mono h-24 overflow-y-auto">
-                {errors.length === 0 ? <p className="text-slate-600 italic">Aucune erreur détectée.</p> : errors.map(err => (
-                    <p key={err.id} className="text-red-400 mb-1">{new Date(err.timestamp).toLocaleTimeString()}: {err.message}</p>
-                ))}
+            <div className="flex items-center justify-between mb-1">
+                <h4 className="text-[10px] text-slate-400 uppercase font-bold">Journal des actions & erreurs ({errors.length})</h4>
+                <button 
+                    onClick={() => errorService.clear()}
+                    className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+                >
+                    Effacer
+                </button>
+            </div>
+            <div className="bg-black p-2.5 rounded text-[10px] font-mono h-40 overflow-y-auto space-y-1">
+                {errors.length === 0 ? (
+                    <p className="text-slate-600 italic">Aucune action ou erreur enregistrée pour le moment...</p>
+                ) : (
+                    errors.map(err => {
+                        const colorClass = 
+                            err.type === 'error' ? 'text-red-400' : 
+                            err.type === 'success' ? 'text-emerald-400' : 
+                            err.type === 'action' ? 'text-cyan-400 font-semibold' : 'text-slate-300';
+                        const badge = 
+                            err.type === 'error' ? '[ERREUR]' : 
+                            err.type === 'success' ? '[SUCCÈS]' : 
+                            err.type === 'action' ? '[ACTION]' : '[INFO]';
+                        return (
+                            <div key={err.id} className={`${colorClass} leading-tight border-b border-slate-900 pb-1`}>
+                                <span className="text-slate-500">[{new Date(err.timestamp).toLocaleTimeString()}]</span> <span className="font-bold">{badge}</span> {err.message}
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
       </div>

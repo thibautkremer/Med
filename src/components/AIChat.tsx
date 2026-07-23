@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, Bot, User, Sparkles, Loader2, MessageSquare, ShieldAlert } from 'lucide-react';
 import { UserProfile } from '../types';
 import { aiService } from '../services/aiService';
+import { errorService } from '../services/errorService';
 
 interface AIChatProps {
   activeProfile?: UserProfile | null;
@@ -28,6 +29,7 @@ export default function AIChat({ activeProfile }: AIChatProps) {
     const query = textToSend || input;
     if (!query.trim() || loading) return;
 
+    errorService.action(`Assistant IA - Envoi message: "${query.substring(0, 40)}..."`);
     const userMsg = { role: 'user' as const, text: query };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);

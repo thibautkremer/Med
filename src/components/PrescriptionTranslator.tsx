@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
 import { aiService } from '../services/aiService';
+import { errorService } from '../services/errorService';
 import {
   FileText, ArrowRight, ShieldCheck, AlertTriangle, RefreshCw, 
   Sparkles, Camera, Upload, HelpCircle, Check, Info, Heart
@@ -54,6 +55,7 @@ export default function PrescriptionTranslator({ activeProfile }: PrescriptionTr
       return;
     }
 
+    errorService.action("Clic sur Traduire / Analyser l'ordonnance");
     setLoading(true);
     setError(null);
     setResult(null);

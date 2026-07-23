@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, SymptomAnalysisResponse } from '../types';
 import { aiService } from '../services/aiService';
+import { errorService } from '../services/errorService';
 import {
   Stethoscope, Send, AlertTriangle, ShieldCheck, RefreshCw, 
   HelpCircle, Pill, ArrowRight, Activity, Info
@@ -22,6 +23,7 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
     e.preventDefault();
     if (!symptoms.trim()) return;
 
+    errorService.action("Clic sur Analyser les symptômes");
     setLoading(true);
     setError(null);
     setResult(null);
