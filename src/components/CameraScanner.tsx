@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ImageAnalysisResponse, CabinetItem } from '../types';
-import { 
+import { aiService } from '../services/aiService';
+import {
   Camera, Upload, RefreshCw, AlertTriangle, CheckCircle, 
   HelpCircle, Eye, ShoppingBag, ArrowRight, ShieldCheck, Heart, Trash2,
   Calendar, Package, Plus, Sparkles
@@ -166,32 +167,7 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
     setError(null);
 
     try {
-      // Strip base64 data prefix (e.g., "data:image/jpeg;base64,")
-      const rawBase64 = base64WithPrefix.split(',')[1];
-
-      const response = await fetch('/api/image/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          imageBase64: rawBase64,
-          mimeType: mimeType,
-          profile: activeProfile,
-          hintPrompt: hintPrompt // To help mock simulation align perfectly
-        })
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-      let data: any = null;
-      if (contentType.includes('application/json')) {
-        data = await response.json();
-      }
-
-      if (!response.ok || !data) {
-        throw new Error(data?.error || data?.details || "Erreur serveur lors de l'analyse visuelle.");
-      }
-
+      const data = await aiService.analyzeMedicineImage(base64WithPrefix, activeProfile);
       setResult(data);
 
       if (data.detectedMedicine?.expirationDate) {
@@ -218,31 +194,30 @@ export default function CameraScanner({ activeProfile, toggleFavorite, favorites
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result as string;
-        const rawBase64 = base64.split(',')[1];
 
-        const res = await fetch('/api/image/analyze-expiration', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: rawBase64, mimeType: file.type })
-        });
+        try {
+          const data = await aiService.analyzeExpiration(base64);
 
-        if (!res.ok) throw new Error("Erreur serveur lors de la lecture de la date.");
-
-        const data = await res.json();
-        if (data.expirationDate) {
-          setResult(prev => prev ? {
-            ...prev,
-            detectedMedicine: {
-              ...prev.detectedMedicine,
-              expirationDate: data.expirationDate,
-              expirationDateFound: true,
-              batchNumber: data.batchNumber || prev.detectedMedicine.batchNumber
-            }
-          } : prev);
-          setCabinetExpDate(data.expirationDate);
-          setExpScanSuccess(`Date détectée avec succès : ${data.expirationDate} ${data.batchNumber ? `(Lot ${data.batchNumber})` : ''}`);
-        } else {
-          setExpScanError("Date de péremption introuvable sur cette photo. Entrez-la manuellement ci-dessous.");
+          if (data.expirationDate) {
+            setResult(prev => prev ? {
+              ...prev,
+              detectedMedicine: {
+                ...prev.detectedMedicine,
+                expirationDate: data.expirationDate,
+                expirationDateFound: true,
+                batchNumber: data.batchNumber || prev.detectedMedicine.batchNumber
+              }
+            } : prev);
+            setCabinetExpDate(data.expirationDate);
+            setExpScanSuccess(`Date détectée avec succès : ${data.expirationDate} ${data.batchNumber ? `(Lot ${data.batchNumber})` : ''}`);
+          } else {
+            setExpScanError("Date de péremption introuvable sur cette photo. Entrez-la manuellement ci-dessous.");
+          }
+        } catch (err: any) {
+          console.error(err);
+          setExpScanError("Une erreur est survenue lors de l'analyse de la date.");
+        } finally {
+          setScanningExpDate(false);
         }
       };
       reader.readAsDataURL(file);

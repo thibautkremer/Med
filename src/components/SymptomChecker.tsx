@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, SymptomAnalysisResponse } from '../types';
-import { 
+import { aiService } from '../services/aiService';
+import {
   Stethoscope, Send, AlertTriangle, ShieldCheck, RefreshCw, 
   HelpCircle, Pill, ArrowRight, Activity, Info
 } from 'lucide-react';
@@ -26,40 +27,8 @@ export default function SymptomChecker({ activeProfile, toggleFavorite, favorite
     setResult(null);
 
     try {
-      const response = await fetch('/api/symptoms/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          symptoms: symptoms.trim(),
-          profile: activeProfile
-        }),
-      });
-
-      let data: any = null;
-      let rawText = "";
-      try {
-        rawText = await response.text();
-        data = JSON.parse(rawText);
-      } catch (parseErr) {
-        console.error("Failed to parse JSON response from /api/symptoms/analyze. Raw:", rawText.substring(0, 200));
-        throw new Error(`Erreur serveur: Réponse non-JSON (Status: ${response.status}). Extrait: ${rawText.substring(0, 100)}`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || data?.details || `Erreur de communication avec le serveur de santé (${response.status}).`);
-      }
-
-      const analysisText = data?.analysis || data?.diagnostic || data?.summary || (typeof data === 'string' ? data : null);
-      if (!data || !analysisText) {
-        throw new Error(data?.error || "Format de réponse invalide reçu du serveur de santé.");
-      }
-
-      setResult({
-        ...data,
-        analysis: analysisText
-      });
+      const data = await aiService.analyzeSymptoms(symptoms.trim(), activeProfile);
+      setResult(data);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Désolé, impossible d'analyser vos symptômes pour le moment. Veuillez réessayer.");

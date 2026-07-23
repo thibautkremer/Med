@@ -130,5 +130,19 @@ export const aiService = {
     const result = await model.generateContent(parts);
     const response = await result.response;
     return cleanAndParseJSON(response.text());
+  },
+
+  async analyzeExpiration(imageBase64: string): Promise<any> {
+    const model = getModel("gemini-1.5-flash");
+    const prompt = `Analyse l'image pour extraire LA DATE DE PÉREMPTION (Expiry date, EXP, MM/YY, YYYY-MM, etc.) et le numéro de lot.
+    Renvoie la date au format YYYY-MM-DD ou YYYY-MM. Si non trouvé, expirationDateFound: false.
+    Réponds UNIQUEMENT en JSON.`;
+
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: imageBase64.split(',')[1] || imageBase64, mimeType: "image/jpeg" } }
+    ]);
+    const response = await result.response;
+    return cleanAndParseJSON(response.text());
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Bot, User, Sparkles, Loader2, MessageSquare, ShieldAlert } from 'lucide-react';
 import { UserProfile } from '../types';
+import { aiService } from '../services/aiService';
 
 interface AIChatProps {
   activeProfile?: UserProfile | null;
@@ -34,35 +35,7 @@ export default function AIChat({ activeProfile }: AIChatProps) {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages,
-          profile: activeProfile
-        })
-      });
-
-      let data: any = null;
-      let rawText = "";
-      try {
-        rawText = await response.text();
-        data = JSON.parse(rawText);
-      } catch (parseErr) {
-        console.error("Failed to parse JSON response from /api/chat. Raw:", rawText.substring(0, 200));
-        throw new Error(`Erreur: La réponse du serveur n'est pas un JSON valide (Status: ${response.status}). Extrait: ${rawText.substring(0, 100)}`);
-      }
-
-      if (!response.ok) {
-        const errorText = data?.error || data?.details || `Erreur de communication avec l'assistant (${response.status}).`;
-        throw new Error(errorText);
-      }
-
-      const replyText = data?.reply || data?.text || data?.response || data?.message || (typeof data === 'string' ? data : null);
-      if (!replyText) {
-        throw new Error(data?.error || "Réponse vide reçue de l'assistant IA.");
-      }
-
+      const replyText = await aiService.chatWithPharmacist(updatedMessages, activeProfile || null);
       setMessages(prev => [...prev, { role: 'bot', text: replyText }]);
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'bot', text: e.message || "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA." }]);

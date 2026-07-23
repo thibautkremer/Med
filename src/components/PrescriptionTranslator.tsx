@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
-import { 
+import { aiService } from '../services/aiService';
+import {
   FileText, ArrowRight, ShieldCheck, AlertTriangle, RefreshCw, 
   Sparkles, Camera, Upload, HelpCircle, Check, Info, Heart
 } from 'lucide-react';
@@ -58,29 +59,7 @@ export default function PrescriptionTranslator({ activeProfile }: PrescriptionTr
     setResult(null);
 
     try {
-      const response = await fetch('/api/prescription/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prescriptionText: textToTranslate,
-          imageBase64: base64Image ? base64Image.split(',')[1] : undefined,
-          mimeType: base64Image ? 'image/jpeg' : undefined,
-          profile: activeProfile
-        })
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-      let data: any = null;
-      if (contentType.includes('application/json')) {
-        data = await response.json();
-      }
-
-      if (!response.ok || !data) {
-        throw new Error(data?.error || data?.details || "Erreur serveur lors de la traduction.");
-      }
-
+      const data = await aiService.translatePrescription(textToTranslate, base64Image || null, activeProfile);
       setResult(data);
     } catch (err: any) {
       console.error(err);
