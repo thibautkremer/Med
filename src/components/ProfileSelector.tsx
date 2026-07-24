@@ -389,7 +389,20 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
 
         {/* API Base URL Config */}
         <div>
-            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">URL du Serveur API Back-end (Requis sur Mobile)</label>
+            <div className="flex justify-between items-center mb-1">
+                <label className="block text-[10px] text-slate-400 uppercase font-bold">URL du Serveur API Back-end (Requis sur Mobile)</label>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const defaultUrl = 'https://ais-pre-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app';
+                        setApiUrl(defaultUrl);
+                        localStorage.setItem('RUNTIME_API_BASE_URL', defaultUrl);
+                    }}
+                    className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                >
+                    Remplir par défaut
+                </button>
+            </div>
             <div className="flex gap-2">
                 <input 
                     type="text"
@@ -409,7 +422,7 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                 </button>
             </div>
             <p className="text-[10px] text-slate-500 mt-1">
-                Laissez vide sur le Web. Saisissez l'URL Cloud Run sur mobile (ex: <code>https://ais-pre-...run.app</code>).
+                Par défaut (si vide) : <code className="text-slate-400 break-all">https://ais-pre-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app</code>.
             </p>
         </div>
 
