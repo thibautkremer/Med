@@ -21,8 +21,12 @@ const getReqApiKey = (req: express.Request): string | null => {
 
 const app = express();
 app.use(cors({
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Gemini-API-Key']
+  origin: true,
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Gemini-API-Key'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
+app.options('*', cors());
 const PORT = 3000;
 
 // Increase payload limits for base64 photo transfer

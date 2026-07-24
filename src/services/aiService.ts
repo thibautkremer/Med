@@ -14,11 +14,13 @@ const getApiBaseUrl = (): string => {
   if (envUrl) {
     return envUrl;
   }
-  // Auto-detect if running on Capacitor mobile webview or localhost
+  // Auto-detect if running inside Capacitor mobile webview or file protocol
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.origin.includes('localhost');
     const isCapacitor = !!(window as any).Capacitor;
-    if (isLocalhost || isCapacitor) {
+    const isMobileWebview = window.location.origin === 'https://localhost' || 
+                            window.location.origin === 'capacitor://localhost' || 
+                            window.location.protocol === 'file:';
+    if (isCapacitor || isMobileWebview) {
       return DEFAULT_FALLBACK_URL;
     }
   }
