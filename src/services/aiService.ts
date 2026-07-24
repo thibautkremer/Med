@@ -44,6 +44,10 @@ const getClientApiKey = (): string | null => {
       return key.trim();
     }
   }
+  const envKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
+  if (envKey) {
+    return envKey;
+  }
   return null;
 };
 
@@ -90,7 +94,7 @@ const clientSideGemini = {
     4. Rédige le diagnostic général en français (analysis), évalue la sévérité (severity) et suggère des médicaments (suggestedMedications).`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -148,7 +152,7 @@ Contexte : ${patientDesc}`;
       `\nAssistant:`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: promptText
     });
 
@@ -164,7 +168,7 @@ Contexte : ${patientDesc}`;
     const prompt = `Analyse l'image de cette boîte de médicament. Identifie la marque, la substance active, l'origine, les équivalences franco-américaines, les précautions et la date de péremption si visible. Profil : ${patientDesc}`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: [
         { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
         { text: prompt }
@@ -228,7 +232,7 @@ Contexte : ${patientDesc}`;
     contents.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents,
       config: {
         responseMimeType: "application/json",
@@ -270,7 +274,7 @@ Contexte : ${patientDesc}`;
     const prompt = `Extrais la date de péremption (YYYY-MM-DD ou YYYY-MM) et le numéro de lot de ce médicament.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: [
         { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
         { text: prompt }

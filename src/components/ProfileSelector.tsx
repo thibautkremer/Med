@@ -34,7 +34,8 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [errors, setErrors] = useState(errorService.getErrors());
-  const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || '');
+  const defaultEnvKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
+  const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || defaultEnvKey);
   const [apiUrl, setApiUrl] = useState(localStorage.getItem('RUNTIME_API_BASE_URL') || '');
   const [copiedLogs, setCopiedLogs] = useState(false);
 
@@ -363,7 +364,21 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
         
         {/* API Key Config */}
         <div>
-            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Clé API Gemini (Runtime Override)</label>
+            <div className="flex justify-between items-center mb-1">
+                <label className="block text-[10px] text-slate-400 uppercase font-bold">Clé API Gemini (Runtime Override)</label>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const defaultKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
+                        setApiKey(defaultKey);
+                        localStorage.setItem('RUNTIME_GEMINI_API_KEY', defaultKey);
+                        errorService.log(`Clé API réinitialisée par défaut : ${defaultKey ? defaultKey.substring(0, 6) + '...' : '(vide)'}`, 'info');
+                    }}
+                    className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                >
+                    Remplir par défaut
+                </button>
+            </div>
             <div className="flex gap-2">
                 <input 
                     type="password"
@@ -374,10 +389,11 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                 />
                 <button 
                     onClick={() => {
-                        console.log('Clé API enregistrée manuellement:', apiKey.substring(0, 4) + '...');
+                        localStorage.setItem('RUNTIME_GEMINI_API_KEY', apiKey);
+                        errorService.log(`[ACTION] Clé API Gemini enregistrée : ${apiKey ? apiKey.substring(0, 6) + '...' : '(vide)'}`, 'info');
                         alert('Clé API enregistrée !');
                     }}
-                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700"
+                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
                 >
                     Save
                 </button>
@@ -397,6 +413,7 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                         const defaultUrl = 'https://ais-pre-xm3x2xeexibmmorrzztj6x-485053903653.us-west2.run.app';
                         setApiUrl(defaultUrl);
                         localStorage.setItem('RUNTIME_API_BASE_URL', defaultUrl);
+                        errorService.log(`[ACTION] URL Backend API réinitialisée par défaut : ${defaultUrl}`, 'info');
                     }}
                     className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
                 >
@@ -413,10 +430,11 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
                 />
                 <button 
                     onClick={() => {
-                        console.log('URL de l\'API enregistrée:', apiUrl);
+                        localStorage.setItem('RUNTIME_API_BASE_URL', apiUrl);
+                        errorService.log(`[ACTION] URL du serveur API backend enregistrée : ${apiUrl || '(défaut Cloud Run)'}`, 'info');
                         alert('URL de l\'API enregistrée !');
                     }}
-                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700"
+                    className="px-3 py-1 bg-emerald-600 rounded text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
                 >
                     Save
                 </button>
