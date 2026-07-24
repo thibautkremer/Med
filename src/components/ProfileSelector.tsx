@@ -36,6 +36,7 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
   const [errors, setErrors] = useState(errorService.getErrors());
   const [apiKey, setApiKey] = useState(localStorage.getItem('RUNTIME_GEMINI_API_KEY') || '');
   const [apiUrl, setApiUrl] = useState(localStorage.getItem('RUNTIME_API_BASE_URL') || '');
+  const [copiedLogs, setCopiedLogs] = useState(false);
 
   useEffect(() => {
     const unsubscribe = errorService.subscribe(() => {
@@ -43,6 +44,47 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
     });
     return unsubscribe;
   }, []);
+
+  const handleCopyLogs = () => {
+    if (errors.length === 0) return;
+    const logText = errors.map(err => {
+      const badge = 
+        err.type === 'error' ? '[ERREUR]' : 
+        err.type === 'success' ? '[SUCCÈS]' : 
+        err.type === 'action' ? '[ACTION]' : '[INFO]';
+      return `[${new Date(err.timestamp).toLocaleTimeString()}] ${badge} ${err.message}`;
+    }).join('\n');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(logText).then(() => {
+        setCopiedLogs(true);
+        setTimeout(() => setCopiedLogs(false), 2000);
+      }).catch(() => {
+        fallbackCopyTextToClipboard(logText);
+      });
+    } else {
+      fallbackCopyTextToClipboard(logText);
+    }
+  };
+
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      setCopiedLogs(true);
+      setTimeout(() => setCopiedLogs(false), 2000);
+    } catch (err) {
+      console.error('Erreur lors de la copie', err);
+    }
+    document.body.removeChild(textArea);
+  };
 
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -375,12 +417,21 @@ export default function ProfileSelector({ activeProfile, setActiveProfile, onPro
         <div>
             <div className="flex items-center justify-between mb-1">
                 <h4 className="text-[10px] text-slate-400 uppercase font-bold">Journal des actions & erreurs ({errors.length})</h4>
-                <button 
-                    onClick={() => errorService.clear()}
-                    className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
-                >
-                    Effacer
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={handleCopyLogs}
+                        disabled={errors.length === 0}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {copiedLogs ? '✓ Copié !' : 'Copier tout'}
+                    </button>
+                    <button 
+                        onClick={() => errorService.clear()}
+                        className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                        Effacer
+                    </button>
+                </div>
             </div>
             <div className="bg-black p-2.5 rounded text-[10px] font-mono h-40 overflow-y-auto space-y-1">
                 {errors.length === 0 ? (
